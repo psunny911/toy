@@ -61,7 +61,7 @@
       const img = new Image();
       await new Promise((resolve, reject) => {
         img.onload = () => resolve();
-        img.onerror = () => reject(new Error('image load failed'));
+        img.onerror = () => reject(new Error(`이미지를 디코딩하지 못했습니다: ${file.name || '(이름 없음)'}`));
         img.src = url;
       });
       loaded.push(img);
@@ -125,14 +125,20 @@
     setPickerError('');
   }
 
+  // 일부 안드로이드 갤러리/클라우드 제공자는 File.type을 빈 문자열로 내려준다.
+  // 그런 경우까지 걸러내면 실제로는 이미지인 파일도 선택 단계에서 전부 탈락하므로,
+  // MIME 타입이 명시적으로 비-이미지일 때만 걸러내고 최종 판별은 아래 <img> 디코딩에 맡긴다.
+  function isLikelyImageFile(file) {
+    const type = (file.type || '').toLowerCase();
+    return type === '' || type.startsWith('image/');
+  }
+
   fileInput.addEventListener('change', async (event) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     setPickerError('');
 
-    const validFiles = Array.from(files)
-      .filter((file) => file.type.startsWith('image/'))
-      .slice(0, 4);
+    const validFiles = Array.from(files).filter(isLikelyImageFile).slice(0, 4);
 
     if (validFiles.length < 2) {
       setPickerError('이미지 파일을 2장 이상 선택해주세요.');
@@ -143,7 +149,7 @@
       const loaded = await loadImages(validFiles);
       initEditor(loaded);
     } catch (err) {
-      setPickerError('사진을 불러오지 못했습니다. 다시 시도해주세요.');
+      setPickerError(err && err.message ? err.message : '사진을 불러오지 못했습니다. 다시 시도해주세요.');
     }
   });
 
