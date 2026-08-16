@@ -14,7 +14,10 @@
   const TEMPLATES = {
     'two-columns': { photoCount: 2 },
     'two-rows': { photoCount: 2 },
-    'three-mixed': { photoCount: 3 },
+    'three-columns': { photoCount: 3 },
+    'three-rows': { photoCount: 3 },
+    'three-one-two': { photoCount: 3 },
+    'three-two-one': { photoCount: 3 },
     'four-grid': { photoCount: 4 },
   };
 
@@ -52,7 +55,23 @@
           { x: g, y: g + h + g, width: innerW, height: h },
         ];
       }
-      case 'three-mixed': {
+      case 'three-columns': {
+        const w = (innerW - g * 2) / 3;
+        return [
+          { x: g, y: g, width: w, height: innerH },
+          { x: g + (w + g) * 1, y: g, width: w, height: innerH },
+          { x: g + (w + g) * 2, y: g, width: w, height: innerH },
+        ];
+      }
+      case 'three-rows': {
+        const h = (innerH - g * 2) / 3;
+        return [
+          { x: g, y: g, width: innerW, height: h },
+          { x: g, y: g + (h + g) * 1, width: innerW, height: h },
+          { x: g, y: g + (h + g) * 2, width: innerW, height: h },
+        ];
+      }
+      case 'three-one-two': {
         const topH = (innerH - g) / 2;
         const bottomH = innerH - g - topH;
         const bottomW = (innerW - g) / 2;
@@ -60,6 +79,16 @@
           { x: g, y: g, width: innerW, height: topH },
           { x: g, y: g + topH + g, width: bottomW, height: bottomH },
           { x: g + bottomW + g, y: g + topH + g, width: bottomW, height: bottomH },
+        ];
+      }
+      case 'three-two-one': {
+        const bottomH = (innerH - g) / 2;
+        const topH = innerH - g - bottomH;
+        const topW = (innerW - g) / 2;
+        return [
+          { x: g, y: g, width: topW, height: topH },
+          { x: g + topW + g, y: g, width: topW, height: topH },
+          { x: g, y: g + topH + g, width: innerW, height: bottomH },
         ];
       }
       case 'four-grid': {

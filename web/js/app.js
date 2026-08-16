@@ -17,7 +17,7 @@
   } = State;
   const { renderCollage, getSlotRectsForState } = Render;
 
-  const TEMPLATE_BY_PHOTO_COUNT = { 2: 'two-columns', 3: 'three-mixed', 4: 'four-grid' };
+  const TEMPLATE_BY_PHOTO_COUNT = { 2: 'two-columns', 3: 'three-one-two', 4: 'four-grid' };
 
   const pickerScreen = document.getElementById('picker-screen');
   const editorScreen = document.getElementById('editor-screen');
@@ -90,6 +90,9 @@
       const enabled = requiredCount === images.length;
       button.disabled = !enabled;
       button.classList.toggle('active', templateId === appState.templateId);
+    }
+    for (const group of templateButtonsEl.querySelectorAll('.template-group')) {
+      group.classList.toggle('group-disabled', Number(group.dataset.count) !== images.length);
     }
   }
 

@@ -33,12 +33,44 @@ test('getSlotRects: two-rows produces 2 equal-height slots filling canvas width'
   assert.equal(slots[1].y, slots[0].y + slots[0].height + 10);
 });
 
-test('getSlotRects: three-mixed produces 1 top slot + 2 bottom slots', () => {
-  const slots = getSlotRects('three-mixed', 300, 300, 5);
+test('getSlotRects: three-columns produces 3 equal-width slots filling canvas height', () => {
+  const slots = getSlotRects('three-columns', 300, 90, 0);
+  assert.equal(slots.length, 3);
+  for (const s of slots) {
+    assert.equal(s.height, 90);
+    assert.ok(Math.abs(s.width - 100) < 1e-9);
+  }
+  assert.equal(slots[1].x, slots[0].x + slots[0].width);
+  assert.equal(slots[2].x, slots[1].x + slots[1].width);
+});
+
+test('getSlotRects: three-rows produces 3 equal-height slots filling canvas width', () => {
+  const slots = getSlotRects('three-rows', 90, 300, 0);
+  assert.equal(slots.length, 3);
+  for (const s of slots) {
+    assert.equal(s.width, 90);
+    assert.ok(Math.abs(s.height - 100) < 1e-9);
+  }
+  assert.equal(slots[1].y, slots[0].y + slots[0].height);
+  assert.equal(slots[2].y, slots[1].y + slots[1].height);
+});
+
+test('getSlotRects: three-one-two produces 1 top slot + 2 bottom slots', () => {
+  const slots = getSlotRects('three-one-two', 300, 300, 5);
   assert.equal(slots.length, 3);
   assert.equal(slots[0].width, 300 - 10); // top spans full inner width
   assert.ok(Math.abs(slots[1].width - slots[2].width) < 1e-9);
   assert.equal(slots[1].y, slots[2].y);
+  assert.ok(slots[1].y > slots[0].y); // bottom row is below the top slot
+});
+
+test('getSlotRects: three-two-one produces 2 top slots + 1 bottom slot', () => {
+  const slots = getSlotRects('three-two-one', 300, 300, 5);
+  assert.equal(slots.length, 3);
+  assert.equal(slots[2].width, 300 - 10); // bottom spans full inner width
+  assert.ok(Math.abs(slots[0].width - slots[1].width) < 1e-9);
+  assert.equal(slots[0].y, slots[1].y);
+  assert.ok(slots[2].y > slots[0].y); // bottom slot is below the top row
 });
 
 test('getSlotRects: four-grid produces 4 equal quadrants', () => {
@@ -55,7 +87,15 @@ test('getSlotRects: unknown template throws', () => {
 });
 
 test('getSlotRects: slots never extend past canvas bounds', () => {
-  for (const templateId of ['two-columns', 'two-rows', 'three-mixed', 'four-grid']) {
+  for (const templateId of [
+    'two-columns',
+    'two-rows',
+    'three-columns',
+    'three-rows',
+    'three-one-two',
+    'three-two-one',
+    'four-grid',
+  ]) {
     const slots = getSlotRects(templateId, 373, 291, 7);
     for (const s of slots) {
       assert.ok(s.x >= 0 && s.y >= 0);

@@ -35,11 +35,58 @@
     </div>
 
     <p class="section-label">템플릿</p>
-    <div id="template-buttons" class="button-row">
-      <button type="button" data-template="two-columns">2분할 가로</button>
-      <button type="button" data-template="two-rows">2분할 세로</button>
-      <button type="button" data-template="three-mixed">3분할</button>
-      <button type="button" data-template="four-grid">4분할</button>
+    <div id="template-buttons">
+      <div class="template-group" data-count="2">
+        <p class="group-label">2분할</p>
+        <div class="chip-row">
+          <button type="button" class="chip" data-template="two-columns">
+            <div class="chip-icon icon-two-columns"><div class="cell"></div><div class="cell"></div></div>
+            <span>가로</span>
+          </button>
+          <button type="button" class="chip" data-template="two-rows">
+            <div class="chip-icon icon-two-rows"><div class="cell"></div><div class="cell"></div></div>
+            <span>세로</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="template-group" data-count="3">
+        <p class="group-label">3분할</p>
+        <div class="chip-row">
+          <button type="button" class="chip" data-template="three-columns">
+            <div class="chip-icon icon-three-columns"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <span>가로 3칸</span>
+          </button>
+          <button type="button" class="chip" data-template="three-rows">
+            <div class="chip-icon icon-three-rows"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <span>세로 3칸</span>
+          </button>
+          <button type="button" class="chip" data-template="three-one-two">
+            <div class="chip-icon icon-three-one-two">
+              <div class="cell full"></div>
+              <div class="row"><div class="cell"></div><div class="cell"></div></div>
+            </div>
+            <span>1 / 2</span>
+          </button>
+          <button type="button" class="chip" data-template="three-two-one">
+            <div class="chip-icon icon-three-two-one">
+              <div class="row"><div class="cell"></div><div class="cell"></div></div>
+              <div class="cell full"></div>
+            </div>
+            <span>2 / 1</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="template-group" data-count="4">
+        <p class="group-label">4분할</p>
+        <div class="chip-row">
+          <button type="button" class="chip" data-template="four-grid">
+            <div class="chip-icon icon-four-grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <span>2x2</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <canvas id="collage-canvas" width="1080" height="1080"></canvas>

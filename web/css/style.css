@@ -75,6 +75,113 @@ body {
   opacity: 0.35;
 }
 
+#template-buttons {
+  margin-bottom: 12px;
+}
+
+.template-group {
+  margin-bottom: 10px;
+  transition: opacity 0.15s ease;
+}
+
+.template-group.group-disabled {
+  opacity: 0.35;
+}
+
+.group-label {
+  font-size: 0.7rem;
+  color: #a1a1aa;
+  margin: 0 0 4px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #18181b;
+}
+
+.chip.active {
+  border-color: #18181b;
+  background: #18181b;
+  color: #fff;
+}
+
+.chip:disabled {
+  opacity: 0.35;
+}
+
+/* 서브 칩 왼쪽에 붙는 레이아웃 미리보기 아이콘 */
+.chip-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 16px;
+  display: flex;
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.9;
+}
+
+.chip-icon .cell {
+  flex: 1;
+  background: currentColor;
+  opacity: 0.4;
+  border-radius: 1px;
+}
+
+.chip.active .chip-icon .cell {
+  opacity: 0.9;
+}
+
+.chip-icon.icon-two-columns,
+.chip-icon.icon-three-columns,
+.chip-icon.icon-four-grid {
+  flex-direction: row;
+}
+
+.chip-icon.icon-two-rows,
+.chip-icon.icon-three-rows {
+  flex-direction: column;
+}
+
+.chip-icon.icon-four-grid {
+  flex-wrap: wrap;
+}
+
+.chip-icon.icon-four-grid .cell {
+  flex-basis: 47%;
+}
+
+.chip-icon.icon-three-one-two,
+.chip-icon.icon-three-two-one {
+  flex-direction: column;
+}
+
+.chip-icon.icon-three-one-two .row,
+.chip-icon.icon-three-two-one .row {
+  flex: 1;
+  display: flex;
+  gap: 1px;
+}
+
+.chip-icon.icon-three-one-two .cell.full,
+.chip-icon.icon-three-two-one .cell.full {
+  flex: 1;
+}
+
 #collage-canvas {
   width: 100%;
   height: auto;
