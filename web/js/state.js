@@ -16,8 +16,8 @@
     return {
       templateId,
       aspectRatioId,
-      borderPx: 8,
-      cornerRadiusPx: 12,
+      borderPx: 0,
+      cornerRadiusPx: 0,
       slots: photoIndices.map((photoIndex) => ({
         photoIndex,
         ...DEFAULT_TRANSFORM,
