@@ -13,8 +13,19 @@
 
   const TEMPLATES = {
     'two-columns': { photoCount: 2 },
+    'two-rows': { photoCount: 2 },
     'three-mixed': { photoCount: 3 },
     'four-grid': { photoCount: 4 },
+  };
+
+  const DEFAULT_LONG_SIDE_PX = 1080;
+
+  const ASPECT_RATIOS = {
+    square: { ratioW: 1, ratioH: 1 },
+    '16-10-landscape': { ratioW: 16, ratioH: 10 },
+    '16-10-portrait': { ratioW: 10, ratioH: 16 },
+    '3-4-landscape': { ratioW: 4, ratioH: 3 },
+    '3-4-portrait': { ratioW: 3, ratioH: 4 },
   };
 
   /**
@@ -32,6 +43,13 @@
         return [
           { x: g, y: g, width: w, height: innerH },
           { x: g + w + g, y: g, width: w, height: innerH },
+        ];
+      }
+      case 'two-rows': {
+        const h = (innerH - g) / 2;
+        return [
+          { x: g, y: g, width: innerW, height: h },
+          { x: g, y: g + h + g, width: innerW, height: h },
         ];
       }
       case 'three-mixed': {
@@ -91,6 +109,19 @@
     };
   }
 
+  /** 비율 프리셋과 긴 변 픽셀 길이로부터 캔버스 픽셀 해상도(width, height)를 계산한다 */
+  function getCanvasSize(aspectRatioId, longSidePx) {
+    const ratio = ASPECT_RATIOS[aspectRatioId];
+    if (!ratio) {
+      throw new Error(`Unknown aspect ratio: ${aspectRatioId}`);
+    }
+    const { ratioW, ratioH } = ratio;
+    if (ratioW >= ratioH) {
+      return { width: longSidePx, height: Math.round((longSidePx * ratioH) / ratioW) };
+    }
+    return { width: Math.round((longSidePx * ratioW) / ratioH), height: longSidePx };
+  }
+
   /** 주어진 점을 포함하는 슬롯의 인덱스를 반환한다. 없으면 -1 */
   function findSlotIndexAtPoint(slotRects, point) {
     return slotRects.findIndex(
@@ -106,11 +137,14 @@
     MIN_ZOOM,
     MAX_ZOOM,
     TEMPLATES,
+    ASPECT_RATIOS,
+    DEFAULT_LONG_SIDE_PX,
     getSlotRects,
     getBaseCoverScale,
     clampZoom,
     getMaxPanOffset,
     clampPanOffset,
+    getCanvasSize,
     findSlotIndexAtPoint,
   };
 });

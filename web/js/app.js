@@ -2,9 +2,19 @@
 // 보안 원칙: innerHTML 미사용(textContent만 사용), eval 미사용, 원격 URL fetch 없음(로컬 blob만 사용).
 // 클래식 스크립트로 로드되므로 geometry.js/gestures.js/state.js/render.js가 이 파일보다 먼저 로드되어야 한다.
 (function () {
-  const { findSlotIndexAtPoint, TEMPLATES } = Geometry;
+  const { findSlotIndexAtPoint, TEMPLATES, DEFAULT_LONG_SIDE_PX, getCanvasSize } = Geometry;
   const { distance, midpoint, isTap, computeZoomFromPinch } = Gestures;
-  const { createInitialState, setTemplate, swapSlots, panSlot, zoomSlot, setBorder, setCornerRadius } = State;
+  const {
+    createInitialState,
+    setTemplate,
+    setAspectRatio,
+    swapSlots,
+    panSlot,
+    zoomSlot,
+    setBorder,
+    setCornerRadius,
+    DEFAULT_ASPECT_RATIO_ID,
+  } = State;
   const { renderCollage, getSlotRectsForState } = Render;
 
   const TEMPLATE_BY_PHOTO_COUNT = { 2: 'two-columns', 3: 'three-mixed', 4: 'four-grid' };
@@ -14,6 +24,7 @@
   const fileInput = document.getElementById('file-input');
   const pickerError = document.getElementById('picker-error');
   const templateButtonsEl = document.getElementById('template-buttons');
+  const aspectButtonsEl = document.getElementById('aspect-buttons');
   const canvas = document.getElementById('collage-canvas');
   const ctx = canvas.getContext('2d');
   const borderSlider = document.getElementById('border-slider');
@@ -66,6 +77,12 @@
     renderCollage(ctx, canvas.width, canvas.height, appState, images, selectedSlotIndex);
   }
 
+  function updateCanvasSize() {
+    const { width, height } = getCanvasSize(appState.aspectRatioId, DEFAULT_LONG_SIDE_PX);
+    canvas.width = width;
+    canvas.height = height;
+  }
+
   function updateTemplateButtons() {
     for (const button of templateButtonsEl.querySelectorAll('button')) {
       const templateId = button.dataset.template;
@@ -76,13 +93,21 @@
     }
   }
 
+  function updateAspectButtons() {
+    for (const button of aspectButtonsEl.querySelectorAll('button')) {
+      button.classList.toggle('active', button.dataset.aspect === appState.aspectRatioId);
+    }
+  }
+
   function initEditor(loadedImages) {
     images = loadedImages;
     const templateId = TEMPLATE_BY_PHOTO_COUNT[images.length];
-    appState = createInitialState(templateId, images.map((_, i) => i));
+    appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID, images.map((_, i) => i));
     selectedSlotIndex = null;
     activeGesture = null;
+    updateCanvasSize();
     updateTemplateButtons();
+    updateAspectButtons();
     render();
     pickerScreen.hidden = true;
     editorScreen.hidden = false;
@@ -128,6 +153,16 @@
     appState = setTemplate(appState, button.dataset.template, images.map((_, i) => i));
     selectedSlotIndex = null;
     updateTemplateButtons();
+    render();
+  });
+
+  aspectButtonsEl.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-aspect]');
+    if (!button) return;
+    appState = setAspectRatio(appState, button.dataset.aspect, images.map((_, i) => i));
+    selectedSlotIndex = null;
+    updateCanvasSize();
+    updateAspectButtons();
     render();
   });
 

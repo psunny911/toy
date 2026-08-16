@@ -8,12 +8,14 @@
     root.State = api;
   }
 })(typeof self !== 'undefined' ? self : this, function (Geometry) {
-  const { clampZoom, clampPanOffset, getMaxPanOffset, TEMPLATES } = Geometry;
+  const { clampZoom, clampPanOffset, getMaxPanOffset, TEMPLATES, ASPECT_RATIOS } = Geometry;
   const DEFAULT_TRANSFORM = Object.freeze({ zoom: 1, offsetX: 0, offsetY: 0 });
+  const DEFAULT_ASPECT_RATIO_ID = 'square';
 
-  function createInitialState(templateId, photoIndices) {
+  function createInitialState(templateId, aspectRatioId, photoIndices) {
     return {
       templateId,
+      aspectRatioId,
       borderPx: 8,
       cornerRadiusPx: 12,
       slots: photoIndices.map((photoIndex) => ({
@@ -27,7 +29,16 @@
     if (!TEMPLATES[templateId]) {
       throw new Error(`Unknown template: ${templateId}`);
     }
-    return createInitialState(templateId, photoIndices);
+    const next = createInitialState(templateId, state.aspectRatioId, photoIndices);
+    return { ...next, borderPx: state.borderPx, cornerRadiusPx: state.cornerRadiusPx };
+  }
+
+  function setAspectRatio(state, aspectRatioId, photoIndices) {
+    if (!ASPECT_RATIOS[aspectRatioId]) {
+      throw new Error(`Unknown aspect ratio: ${aspectRatioId}`);
+    }
+    const next = createInitialState(state.templateId, aspectRatioId, photoIndices);
+    return { ...next, borderPx: state.borderPx, cornerRadiusPx: state.cornerRadiusPx };
   }
 
   function swapSlots(state, indexA, indexB) {
@@ -85,8 +96,10 @@
   }
 
   return {
+    DEFAULT_ASPECT_RATIO_ID,
     createInitialState,
     setTemplate,
+    setAspectRatio,
     swapSlots,
     panSlot,
     zoomSlot,

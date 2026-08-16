@@ -15,9 +15,14 @@ body {
   margin: 0 auto;
 }
 
-h1 {
-  font-size: 1.25rem;
-  margin-bottom: 4px;
+.app-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.app-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
 }
 
 .file-button {
@@ -37,34 +42,42 @@ h1 {
   margin-top: 12px;
 }
 
-#template-buttons {
+.section-label {
+  font-size: 0.75rem;
+  color: #71717a;
+  margin: 0 0 6px;
+}
+
+.button-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-#template-buttons button {
-  flex: 1;
+.button-row button {
+  flex: 1 1 auto;
+  min-width: 72px;
   padding: 8px;
   border: 1px solid #d4d4d8;
   background: #fff;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
-#template-buttons button.active {
+.button-row button.active {
   border-color: #18181b;
   background: #18181b;
   color: #fff;
 }
 
-#template-buttons button:disabled {
+.button-row button:disabled {
   opacity: 0.35;
 }
 
 #collage-canvas {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  height: auto;
   display: block;
   border-radius: 8px;
   touch-action: none;

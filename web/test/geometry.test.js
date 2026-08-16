@@ -6,6 +6,7 @@ const {
   getMaxPanOffset,
   clampPanOffset,
   clampZoom,
+  getCanvasSize,
   findSlotIndexAtPoint,
   MIN_ZOOM,
   MAX_ZOOM,
@@ -20,6 +21,16 @@ test('getSlotRects: two-columns produces 2 equal-width slots filling canvas heig
   assert.ok(Math.abs(slots[0].width - slots[1].width) < 1e-9);
   // 오른쪽 슬롯이 왼쪽 슬롯+gap 뒤에서 시작
   assert.equal(slots[1].x, slots[0].x + slots[0].width + 10);
+});
+
+test('getSlotRects: two-rows produces 2 equal-height slots filling canvas width', () => {
+  const slots = getSlotRects('two-rows', 200, 400, 10);
+  assert.equal(slots.length, 2);
+  for (const s of slots) {
+    assert.equal(s.width, 200 - 20);
+  }
+  assert.ok(Math.abs(slots[0].height - slots[1].height) < 1e-9);
+  assert.equal(slots[1].y, slots[0].y + slots[0].height + 10);
 });
 
 test('getSlotRects: three-mixed produces 1 top slot + 2 bottom slots', () => {
@@ -44,7 +55,7 @@ test('getSlotRects: unknown template throws', () => {
 });
 
 test('getSlotRects: slots never extend past canvas bounds', () => {
-  for (const templateId of ['two-columns', 'three-mixed', 'four-grid']) {
+  for (const templateId of ['two-columns', 'two-rows', 'three-mixed', 'four-grid']) {
     const slots = getSlotRects(templateId, 373, 291, 7);
     for (const s of slots) {
       assert.ok(s.x >= 0 && s.y >= 0);
@@ -93,4 +104,28 @@ test('findSlotIndexAtPoint: returns the index of the slot containing the point',
 test('findSlotIndexAtPoint: returns -1 when the point is outside every slot', () => {
   const slots = getSlotRects('two-columns', 200, 100, 0);
   assert.equal(findSlotIndexAtPoint(slots, { x: -5, y: -5 }), -1);
+});
+
+test('getCanvasSize: square keeps the long side on both dimensions', () => {
+  assert.deepEqual(getCanvasSize('square', 1000), { width: 1000, height: 1000 });
+});
+
+test('getCanvasSize: 16-10 landscape puts the long side on width', () => {
+  assert.deepEqual(getCanvasSize('16-10-landscape', 1000), { width: 1000, height: 625 });
+});
+
+test('getCanvasSize: 16-10 portrait puts the long side on height', () => {
+  assert.deepEqual(getCanvasSize('16-10-portrait', 1000), { width: 625, height: 1000 });
+});
+
+test('getCanvasSize: 3-4 landscape (ratio 4:3) puts the long side on width', () => {
+  assert.deepEqual(getCanvasSize('3-4-landscape', 1000), { width: 1000, height: 750 });
+});
+
+test('getCanvasSize: 3-4 portrait (ratio 3:4) puts the long side on height', () => {
+  assert.deepEqual(getCanvasSize('3-4-portrait', 1000), { width: 750, height: 1000 });
+});
+
+test('getCanvasSize: unknown aspect ratio id throws', () => {
+  assert.throws(() => getCanvasSize('nope', 1000));
 });

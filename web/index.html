@@ -12,8 +12,10 @@
 </head>
 <body>
 <div id="app">
+  <header class="app-header">
+    <h1>Make it a Grid</h1>
+  </header>
   <section id="picker-screen">
-    <h1>사진 콜라주</h1>
     <p>사진을 2~4장 선택하세요.</p>
     <label class="file-button">
       사진 선택
@@ -23,13 +25,24 @@
   </section>
 
   <section id="editor-screen" hidden>
-    <div id="template-buttons">
-      <button type="button" data-template="two-columns">2분할</button>
+    <p class="section-label">비율</p>
+    <div id="aspect-buttons" class="button-row">
+      <button type="button" data-aspect="square">1:1</button>
+      <button type="button" data-aspect="16-10-landscape">16:10 가로</button>
+      <button type="button" data-aspect="16-10-portrait">16:10 세로</button>
+      <button type="button" data-aspect="3-4-landscape">3:4 가로</button>
+      <button type="button" data-aspect="3-4-portrait">3:4 세로</button>
+    </div>
+
+    <p class="section-label">템플릿</p>
+    <div id="template-buttons" class="button-row">
+      <button type="button" data-template="two-columns">2분할 가로</button>
+      <button type="button" data-template="two-rows">2분할 세로</button>
       <button type="button" data-template="three-mixed">3분할</button>
       <button type="button" data-template="four-grid">4분할</button>
     </div>
 
-    <canvas id="collage-canvas" width="800" height="800"></canvas>
+    <canvas id="collage-canvas" width="1080" height="1080"></canvas>
     <p class="hint">사진을 탭해서 서로 위치를 바꾸고, 드래그로 이동, 두 손가락으로 확대/축소하세요.</p>
 
     <div class="controls">
