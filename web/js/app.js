@@ -32,6 +32,7 @@
 
   const pickerScreen = document.getElementById('picker-screen');
   const editorScreen = document.getElementById('editor-screen');
+  const actionBar = document.getElementById('action-bar');
   const fileInput = document.getElementById('file-input');
   const pickerError = document.getElementById('picker-error');
   const editorError = document.getElementById('editor-error');
@@ -172,6 +173,7 @@
     updateEmptySlotOverlay();
     pickerScreen.hidden = true;
     editorScreen.hidden = false;
+    actionBar.hidden = false;
     setSaveStatus('');
     setEditorError('');
   }
@@ -184,6 +186,7 @@
     fileInput.value = '';
     emptySlotOverlay.textContent = '';
     editorScreen.hidden = true;
+    actionBar.hidden = true;
     pickerScreen.hidden = false;
     setPickerError('');
   }

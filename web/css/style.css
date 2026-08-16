@@ -203,6 +203,28 @@ body {
   flex: 1;
 }
 
+#editor-screen {
+  /* 하단 고정 액션바에 콘텐츠가 가려지지 않도록 여백 확보 */
+  padding-bottom: 104px;
+}
+
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f4f4f5;
+  border-top: 1px solid #e4e4e7;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+}
+
+.action-bar-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 16px;
+}
+
 .actions {
   display: flex;
   gap: 8px;
@@ -228,4 +250,5 @@ body {
   font-size: 0.85rem;
   color: #16a34a;
   text-align: center;
+  margin: 0 0 6px;
 }
