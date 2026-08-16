@@ -8,7 +8,7 @@
   content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';"
 />
 <title>사진 콜라주</title>
-<link rel="stylesheet" href="css/style.css?v=5" />
+<link rel="stylesheet" href="css/style.css?v=6" />
 </head>
 <body>
 <div id="app">
@@ -25,53 +25,6 @@
   </section>
 
   <section id="editor-screen" hidden>
-    <p class="section-label">비율</p>
-    <div id="aspect-buttons" class="chip-strip">
-      <button type="button" class="chip" data-aspect="square">1:1</button>
-      <button type="button" class="chip" data-aspect="16-10-landscape">16:10 가로</button>
-      <button type="button" class="chip" data-aspect="16-10-portrait">16:10 세로</button>
-      <button type="button" class="chip" data-aspect="3-4-landscape">3:4 가로</button>
-      <button type="button" class="chip" data-aspect="3-4-portrait">3:4 세로</button>
-    </div>
-
-    <p class="section-label">템플릿</p>
-    <div id="template-buttons" class="chip-strip">
-      <button type="button" class="chip" data-template="two-columns">
-        <div class="chip-icon icon-two-columns"><div class="cell"></div><div class="cell"></div></div>
-        <span>가로</span>
-      </button>
-      <button type="button" class="chip" data-template="two-rows">
-        <div class="chip-icon icon-two-rows"><div class="cell"></div><div class="cell"></div></div>
-        <span>세로</span>
-      </button>
-      <button type="button" class="chip" data-template="three-columns">
-        <div class="chip-icon icon-three-columns"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
-        <span>가로 3칸</span>
-      </button>
-      <button type="button" class="chip" data-template="three-rows">
-        <div class="chip-icon icon-three-rows"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
-        <span>세로 3칸</span>
-      </button>
-      <button type="button" class="chip" data-template="three-one-two">
-        <div class="chip-icon icon-three-one-two">
-          <div class="cell full"></div>
-          <div class="row"><div class="cell"></div><div class="cell"></div></div>
-        </div>
-        <span>1 / 2</span>
-      </button>
-      <button type="button" class="chip" data-template="three-two-one">
-        <div class="chip-icon icon-three-two-one">
-          <div class="row"><div class="cell"></div><div class="cell"></div></div>
-          <div class="cell full"></div>
-        </div>
-        <span>2 / 1</span>
-      </button>
-      <button type="button" class="chip" data-template="four-grid">
-        <div class="chip-icon icon-four-grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
-        <span>2x2</span>
-      </button>
-    </div>
-
     <div class="canvas-wrap">
       <canvas id="collage-canvas" width="1080" height="1080"></canvas>
       <div id="empty-slot-overlay" class="empty-slot-overlay"></div>
@@ -80,20 +33,73 @@
     <p id="editor-error" class="error" role="alert"></p>
 
     <input type="file" id="add-photo-input" accept="image/*" hidden />
-
-    <div class="controls">
-      <label>테두리 두께
-        <input type="range" id="border-slider" min="0" max="20" value="0" />
-      </label>
-      <label>모서리 둥글기
-        <input type="range" id="corner-slider" min="0" max="30" value="0" />
-      </label>
-    </div>
   </section>
 </div>
 
 <div id="action-bar" class="action-bar" hidden>
   <div class="action-bar-inner">
+    <div id="detail-panel" class="detail-panel" hidden>
+      <div id="aspect-buttons" class="chip-strip" hidden>
+        <button type="button" class="chip" data-aspect="square">1:1</button>
+        <button type="button" class="chip" data-aspect="16-10-landscape">16:10 가로</button>
+        <button type="button" class="chip" data-aspect="16-10-portrait">16:10 세로</button>
+        <button type="button" class="chip" data-aspect="3-4-landscape">3:4 가로</button>
+        <button type="button" class="chip" data-aspect="3-4-portrait">3:4 세로</button>
+      </div>
+
+      <div id="template-buttons" class="chip-strip" hidden>
+        <button type="button" class="chip" data-template="two-columns">
+          <div class="chip-icon icon-two-columns"><div class="cell"></div><div class="cell"></div></div>
+          <span>가로</span>
+        </button>
+        <button type="button" class="chip" data-template="two-rows">
+          <div class="chip-icon icon-two-rows"><div class="cell"></div><div class="cell"></div></div>
+          <span>세로</span>
+        </button>
+        <button type="button" class="chip" data-template="three-columns">
+          <div class="chip-icon icon-three-columns"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+          <span>가로 3칸</span>
+        </button>
+        <button type="button" class="chip" data-template="three-rows">
+          <div class="chip-icon icon-three-rows"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+          <span>세로 3칸</span>
+        </button>
+        <button type="button" class="chip" data-template="three-one-two">
+          <div class="chip-icon icon-three-one-two">
+            <div class="cell full"></div>
+            <div class="row"><div class="cell"></div><div class="cell"></div></div>
+          </div>
+          <span>1 / 2</span>
+        </button>
+        <button type="button" class="chip" data-template="three-two-one">
+          <div class="chip-icon icon-three-two-one">
+            <div class="row"><div class="cell"></div><div class="cell"></div></div>
+            <div class="cell full"></div>
+          </div>
+          <span>2 / 1</span>
+        </button>
+        <button type="button" class="chip" data-template="four-grid">
+          <div class="chip-icon icon-four-grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+          <span>2x2</span>
+        </button>
+      </div>
+
+      <div id="adjust-panel" class="controls" hidden>
+        <label>테두리 두께
+          <input type="range" id="border-slider" min="0" max="20" value="0" />
+        </label>
+        <label>모서리 둥글기
+          <input type="range" id="corner-slider" min="0" max="30" value="0" />
+        </label>
+      </div>
+    </div>
+
+    <div id="tab-bar" class="tab-bar">
+      <button type="button" class="tab" data-tab="aspect">비율</button>
+      <button type="button" class="tab" data-tab="template">템플릿</button>
+      <button type="button" class="tab" data-tab="adjust">조정</button>
+    </div>
+
     <p id="save-status" role="status"></p>
     <div class="actions">
       <button type="button" id="reselect-button">다시 선택</button>
@@ -101,10 +107,10 @@
     </div>
   </div>
 </div>
-<script src="js/geometry.js?v=5"></script>
-<script src="js/gestures.js?v=5"></script>
-<script src="js/state.js?v=5"></script>
-<script src="js/render.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/geometry.js?v=6"></script>
+<script src="js/gestures.js?v=6"></script>
+<script src="js/state.js?v=6"></script>
+<script src="js/render.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

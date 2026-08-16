@@ -47,6 +47,10 @@
   const reselectButton = document.getElementById('reselect-button');
   const saveButton = document.getElementById('save-button');
   const saveStatus = document.getElementById('save-status');
+  const tabBar = document.getElementById('tab-bar');
+  const detailPanel = document.getElementById('detail-panel');
+  const adjustPanel = document.getElementById('adjust-panel');
+  const tabPanels = { aspect: aspectButtonsEl, template: templateButtonsEl, adjust: adjustPanel };
 
   let images = []; // 사진 풀. 잘려나간 자리는 null(tombstone)로 남아 다른 슬롯의 인덱스를 안 건드림
   let imageUrls = []; // images[i]에 대응하는 Object URL (revoke용, 인덱스 동기화됨)
@@ -54,6 +58,7 @@
   let selectedSlotIndex = null; // 스왑/이동 대기 중인 "채워진" 슬롯
   let activeGesture = null;
   let pendingAddSlotIndex = null; // add-photo-input이 어느 빈 슬롯을 위한 것인지 기억
+  let activeTab = null; // 하단 탭 시트에서 펼쳐진 패널 ('aspect' | 'template' | 'adjust' | null)
 
   function setPickerError(message) {
     pickerError.textContent = message;
@@ -113,6 +118,24 @@
     canvas.height = height;
   }
 
+  /** 탭을 다시 누르면 접히고, 다른 탭을 누르면 그 패널만 펼쳐진다 */
+  function setActiveTab(tab) {
+    activeTab = activeTab === tab ? null : tab;
+    detailPanel.hidden = activeTab === null;
+    for (const [name, panel] of Object.entries(tabPanels)) {
+      panel.hidden = name !== activeTab;
+    }
+    for (const button of tabBar.querySelectorAll('button')) {
+      button.classList.toggle('active', button.dataset.tab === activeTab);
+    }
+  }
+
+  tabBar.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-tab]');
+    if (!button) return;
+    setActiveTab(button.dataset.tab);
+  });
+
   function updateTemplateButtons() {
     for (const button of templateButtonsEl.querySelectorAll('button')) {
       button.classList.toggle('active', button.dataset.template === appState.templateId);
@@ -166,6 +189,10 @@
     appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID, photoIndices);
     selectedSlotIndex = null;
     activeGesture = null;
+    activeTab = null;
+    detailPanel.hidden = true;
+    for (const panel of Object.values(tabPanels)) panel.hidden = true;
+    for (const button of tabBar.querySelectorAll('button')) button.classList.remove('active');
     updateCanvasSize();
     updateTemplateButtons();
     updateAspectButtons();
