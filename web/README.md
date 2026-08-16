@@ -41,3 +41,11 @@ web/
 supported for HTTP" CORS 에러로 막힌다 (Chromium에서 직접 검증함). UMD 패턴으로
 작성해 브라우저에서는 전역 객체(`Geometry`, `Gestures`, `State`, `Render`)로,
 Node 테스트에서는 `require()`로 동일 코드를 재사용한다.
+
+## 캐시 버스팅
+
+`index.html`의 `css/style.css`, `js/*.js` 참조에는 `?v=N` 쿼리스트링이 붙어 있다.
+GitHub Pages/브라우저 캐시 때문에 배포 직후 새 HTML이 옛날 JS 파일과 섞여서
+로드되면(예: 새 HTML의 템플릿 id를 옛날 `geometry.js`가 모른다) 런타임 에러가
+날 수 있다. **JS/CSS 파일 내용을 바꿀 때마다 `index.html`의 모든 `?v=N`을
+한 번에 +1 해서** 이런 버전 불일치를 막는다.
