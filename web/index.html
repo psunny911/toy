@@ -8,7 +8,7 @@
   content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';"
 />
 <title>사진 콜라주</title>
-<link rel="stylesheet" href="css/style.css?v=6" />
+<link rel="stylesheet" href="css/style.css?v=7" />
 </head>
 <body>
 <div id="app">
@@ -39,7 +39,8 @@
 <div id="action-bar" class="action-bar" hidden>
   <div class="action-bar-inner">
     <div id="detail-panel" class="detail-panel" hidden>
-      <div id="aspect-buttons" class="chip-strip" hidden>
+      <p class="section-label">비율</p>
+      <div id="aspect-buttons" class="chip-strip">
         <button type="button" class="chip" data-aspect="square">1:1</button>
         <button type="button" class="chip" data-aspect="16-10-landscape">16:10 가로</button>
         <button type="button" class="chip" data-aspect="16-10-portrait">16:10 세로</button>
@@ -47,7 +48,8 @@
         <button type="button" class="chip" data-aspect="3-4-portrait">3:4 세로</button>
       </div>
 
-      <div id="template-buttons" class="chip-strip" hidden>
+      <p class="section-label">템플릿</p>
+      <div id="template-buttons" class="chip-strip">
         <button type="button" class="chip" data-template="two-columns">
           <div class="chip-icon icon-two-columns"><div class="cell"></div><div class="cell"></div></div>
           <span>가로</span>
@@ -84,7 +86,8 @@
         </button>
       </div>
 
-      <div id="adjust-panel" class="controls" hidden>
+      <p class="section-label">조정</p>
+      <div id="adjust-panel" class="controls">
         <label>테두리 두께
           <input type="range" id="border-slider" min="0" max="20" value="0" />
         </label>
@@ -94,11 +97,7 @@
       </div>
     </div>
 
-    <div id="tab-bar" class="tab-bar">
-      <button type="button" class="tab" data-tab="aspect">비율</button>
-      <button type="button" class="tab" data-tab="template">템플릿</button>
-      <button type="button" class="tab" data-tab="adjust">조정</button>
-    </div>
+    <button type="button" id="options-toggle" class="options-toggle">옵션</button>
 
     <p id="save-status" role="status"></p>
     <div class="actions">
@@ -107,10 +106,10 @@
     </div>
   </div>
 </div>
-<script src="js/geometry.js?v=6"></script>
-<script src="js/gestures.js?v=6"></script>
-<script src="js/state.js?v=6"></script>
-<script src="js/render.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/geometry.js?v=7"></script>
+<script src="js/gestures.js?v=7"></script>
+<script src="js/state.js?v=7"></script>
+<script src="js/render.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

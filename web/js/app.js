@@ -47,10 +47,9 @@
   const reselectButton = document.getElementById('reselect-button');
   const saveButton = document.getElementById('save-button');
   const saveStatus = document.getElementById('save-status');
-  const tabBar = document.getElementById('tab-bar');
+  const optionsToggle = document.getElementById('options-toggle');
   const detailPanel = document.getElementById('detail-panel');
   const adjustPanel = document.getElementById('adjust-panel');
-  const tabPanels = { aspect: aspectButtonsEl, template: templateButtonsEl, adjust: adjustPanel };
 
   let images = []; // 사진 풀. 잘려나간 자리는 null(tombstone)로 남아 다른 슬롯의 인덱스를 안 건드림
   let imageUrls = []; // images[i]에 대응하는 Object URL (revoke용, 인덱스 동기화됨)
@@ -58,7 +57,7 @@
   let selectedSlotIndex = null; // 스왑/이동 대기 중인 "채워진" 슬롯
   let activeGesture = null;
   let pendingAddSlotIndex = null; // add-photo-input이 어느 빈 슬롯을 위한 것인지 기억
-  let activeTab = null; // 하단 탭 시트에서 펼쳐진 패널 ('aspect' | 'template' | 'adjust' | null)
+  let optionsOpen = false; // 비율/템플릿/조정을 한데 모은 패널이 펼쳐져 있는지
 
   function setPickerError(message) {
     pickerError.textContent = message;
@@ -118,22 +117,16 @@
     canvas.height = height;
   }
 
-  /** 탭을 다시 누르면 접히고, 다른 탭을 누르면 그 패널만 펼쳐진다 */
-  function setActiveTab(tab) {
-    activeTab = activeTab === tab ? null : tab;
-    detailPanel.hidden = activeTab === null;
-    for (const [name, panel] of Object.entries(tabPanels)) {
-      panel.hidden = name !== activeTab;
-    }
-    for (const button of tabBar.querySelectorAll('button')) {
-      button.classList.toggle('active', button.dataset.tab === activeTab);
-    }
+  /** 비율/템플릿/조정을 한데 모은 패널을 펼치거나 접는다 (단일 토글) */
+  function setOptionsOpen(open) {
+    optionsOpen = open;
+    detailPanel.hidden = !open;
+    optionsToggle.classList.toggle('active', open);
+    optionsToggle.textContent = open ? '옵션 닫기' : '옵션';
   }
 
-  tabBar.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-tab]');
-    if (!button) return;
-    setActiveTab(button.dataset.tab);
+  optionsToggle.addEventListener('click', () => {
+    setOptionsOpen(!optionsOpen);
   });
 
   function updateTemplateButtons() {
@@ -189,10 +182,7 @@
     appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID, photoIndices);
     selectedSlotIndex = null;
     activeGesture = null;
-    activeTab = null;
-    detailPanel.hidden = true;
-    for (const panel of Object.values(tabPanels)) panel.hidden = true;
-    for (const button of tabBar.querySelectorAll('button')) button.classList.remove('active');
+    setOptionsOpen(false);
     updateCanvasSize();
     updateTemplateButtons();
     updateAspectButtons();
@@ -342,7 +332,16 @@
 
     if (points.length === 1) {
       const slotIndex = filledSlotAtPoint(points[0]);
-      activeGesture = slotIndex === -1 ? null : { type: 'pending', slotIndex, startPoint: points[0], lastPoint: points[0] };
+      if (slotIndex === -1) {
+        // 사진이 없는 여백(테두리/간격)을 탭한 것 — 선택 대기 중이던 슬롯이 있으면 해제
+        if (selectedSlotIndex !== null) {
+          selectedSlotIndex = null;
+          render();
+        }
+        activeGesture = null;
+      } else {
+        activeGesture = { type: 'pending', slotIndex, startPoint: points[0], lastPoint: points[0] };
+      }
     } else if (points.length === 2) {
       const slotIndex = filledSlotAtPoint(midpoint(points[0], points[1]));
       activeGesture =
@@ -411,6 +410,15 @@
   canvas.addEventListener('touchend', onTouchEnd, { passive: false });
   canvas.addEventListener('touchcancel', () => {
     activeGesture = null;
+  });
+
+  // 사진 탭으로 스왑/이동 대기 중일 때, 사진 영역(캔버스) 바깥 아무 곳을 클릭하면 선택 해제.
+  // 캔버스 내부의 탭은 onTouchStart/onTouchEnd가 이미 선택·해제를 직접 처리하므로 제외한다.
+  document.addEventListener('click', (event) => {
+    if (selectedSlotIndex === null) return;
+    if (event.target.closest('.canvas-wrap')) return;
+    selectedSlotIndex = null;
+    render();
   });
 
   async function onSave() {

@@ -42,6 +42,12 @@ body {
   margin-top: 12px;
 }
 
+.section-label {
+  font-size: 0.75rem;
+  color: #71717a;
+  margin: 0 0 6px;
+}
+
 /* 필터 캐러셀 스타일 가로 스크롤 한 줄 칩 스트립 (비율/템플릿 공용) */
 .chip-strip {
   display: flex;
@@ -223,14 +229,9 @@ body {
   margin-bottom: 10px;
 }
 
-.tab-bar {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.tab {
-  flex: 1;
+.options-toggle {
+  display: block;
+  width: 100%;
   padding: 10px;
   border: 1px solid #d4d4d8;
   background: #fff;
@@ -238,9 +239,10 @@ body {
   font-size: 0.85rem;
   font-weight: 600;
   color: #18181b;
+  margin-bottom: 10px;
 }
 
-.tab.active {
+.options-toggle.active {
   border-color: #18181b;
   background: #18181b;
   color: #fff;
