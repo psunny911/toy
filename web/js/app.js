@@ -2,18 +2,24 @@
 // 보안 원칙: innerHTML 미사용(textContent만 사용), eval 미사용, 원격 URL fetch 없음(로컬 blob만 사용).
 // 클래식 스크립트로 로드되므로 geometry.js/gestures.js/state.js/render.js가 이 파일보다 먼저 로드되어야 한다.
 //
-// 슬롯 모델: 사진 배열(images)과 슬롯은 인덱스로 직접 매핑된다 — 슬롯 i는 항상 images[i].
-// 템플릿은 사진 개수와 무관하게 항상 선택 가능하다. 템플릿을 바꿔 슬롯 수가 줄면
-// 뒤쪽 사진을 잘라내고(앞 사진 유지), 슬롯 수가 늘면 남는 칸은 빈 채로 두고
-// 맨 앞의 빈 칸에만 "+" 오버레이를 띄워 다음 사진을 추가할 수 있게 한다.
+// 슬롯 모델: 사진 "풀"(images/imageUrls, 인덱스 안정성을 위해 삭제 시 tombstone으로 null 처리)과
+// 슬롯은 slot.photoIndex로 독립적으로 연결된다. 템플릿은 사진 개수와 무관하게 항상 선택
+// 가능하다. 초기 로드/템플릿 확장 시에는 앞에서부터 채우지만, 그 이후에는 탭 스왑·이동으로
+// 슬롯-사진 매핑을 자유롭게 바꿀 수 있다:
+//   - 채워진 슬롯 A 탭 → 채워진 슬롯 B 탭 = 스왑
+//   - 채워진 슬롯 A 탭 → 빈 슬롯 B의 "+" 탭 = 이동 (A는 빈 슬롯이 됨)
+//   - 아무 것도 선택 안 한 채 빈 슬롯의 "+" 탭 = 새 사진 추가
 (function () {
   const { findSlotIndexAtPoint, TEMPLATES, DEFAULT_LONG_SIDE_PX, getCanvasSize } = Geometry;
   const { distance, midpoint, isTap, computeZoomFromPinch } = Gestures;
   const {
     createInitialState,
+    currentPhotoIndices,
     setTemplate,
     setAspectRatio,
-    resetSlotTransforms,
+    swapSlots,
+    moveSlot,
+    assignSlot,
     panSlot,
     zoomSlot,
     setBorder,
@@ -41,11 +47,12 @@
   const saveButton = document.getElementById('save-button');
   const saveStatus = document.getElementById('save-status');
 
-  let images = [];
+  let images = []; // 사진 풀. 잘려나간 자리는 null(tombstone)로 남아 다른 슬롯의 인덱스를 안 건드림
   let imageUrls = []; // images[i]에 대응하는 Object URL (revoke용, 인덱스 동기화됨)
   let appState = null;
-  let selectedSlotIndex = null;
+  let selectedSlotIndex = null; // 스왑/이동 대기 중인 "채워진" 슬롯
   let activeGesture = null;
+  let pendingAddSlotIndex = null; // add-photo-input이 어느 빈 슬롯을 위한 것인지 기억
 
   function setPickerError(message) {
     pickerError.textContent = message;
@@ -59,14 +66,16 @@
     saveStatus.textContent = message;
   }
 
-  function clearImages() {
-    for (const url of imageUrls) URL.revokeObjectURL(url);
+  function clearPool() {
+    for (const url of imageUrls) {
+      if (url) URL.revokeObjectURL(url);
+    }
     images = [];
     imageUrls = [];
   }
 
-  /** 파일 하나를 디코딩해 images/imageUrls 끝에 추가한다 (앞에서부터 채우기) */
-  async function appendImage(file) {
+  /** 파일 하나를 디코딩해 풀 끝에 추가하고 새 photoIndex를 반환한다 */
+  async function appendToPool(file) {
     const url = URL.createObjectURL(file);
     const img = new Image();
     try {
@@ -81,21 +90,7 @@
     }
     images.push(img);
     imageUrls.push(url);
-  }
-
-  async function loadInitialImages(files) {
-    clearImages();
-    for (const file of files) {
-      await appendImage(file);
-    }
-  }
-
-  /** 템플릿 슬롯 수보다 사진이 많으면 뒤쪽부터 잘라낸다 (앞 사진 유지) */
-  function truncateImages(slotCount) {
-    if (images.length <= slotCount) return;
-    for (let i = slotCount; i < imageUrls.length; i++) URL.revokeObjectURL(imageUrls[i]);
-    images = images.slice(0, slotCount);
-    imageUrls = imageUrls.slice(0, slotCount);
+    return images.length - 1;
   }
 
   function isLikelyImageFile(file) {
@@ -129,33 +124,45 @@
     }
   }
 
-  /** 맨 앞의 빈 슬롯 위치에만 "+" 추가 버튼을 올린다 (사진은 항상 앞에서부터 채워지므로) */
+  /** 빈 슬롯마다 "+" 버튼을 올린다. 이동 대기 중인 사진이 있으면 그 슬롯으로 옮기고,
+   *  없으면 새 사진을 골라 그 슬롯에 채운다 */
   function updateEmptySlotOverlay() {
     emptySlotOverlay.textContent = '';
-    const slotCount = appState.slots.length;
-    if (images.length >= slotCount) return;
-
-    const nextIndex = images.length;
-    const rect = currentSlotRects()[nextIndex];
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'add-photo-button';
-    button.style.left = (rect.x / canvas.width) * 100 + '%';
-    button.style.top = (rect.y / canvas.height) * 100 + '%';
-    button.style.width = (rect.width / canvas.width) * 100 + '%';
-    button.style.height = (rect.height / canvas.height) * 100 + '%';
-    button.setAttribute('aria-label', '사진 추가');
-    button.textContent = '+';
-    button.addEventListener('click', () => {
-      addPhotoInput.value = '';
-      addPhotoInput.click();
+    const rects = currentSlotRects();
+    appState.slots.forEach((slot, index) => {
+      if (slot.photoIndex !== null) return;
+      const rect = rects[index];
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'add-photo-button';
+      button.style.left = (rect.x / canvas.width) * 100 + '%';
+      button.style.top = (rect.y / canvas.height) * 100 + '%';
+      button.style.width = (rect.width / canvas.width) * 100 + '%';
+      button.style.height = (rect.height / canvas.height) * 100 + '%';
+      button.setAttribute('aria-label', '사진 추가');
+      button.textContent = '+';
+      button.addEventListener('click', () => onEmptySlotClick(index));
+      emptySlotOverlay.appendChild(button);
     });
-    emptySlotOverlay.appendChild(button);
+  }
+
+  function onEmptySlotClick(slotIndex) {
+    if (selectedSlotIndex !== null) {
+      appState = moveSlot(appState, selectedSlotIndex, slotIndex);
+      selectedSlotIndex = null;
+      render();
+      updateEmptySlotOverlay();
+      return;
+    }
+    pendingAddSlotIndex = slotIndex;
+    addPhotoInput.value = '';
+    addPhotoInput.click();
   }
 
   function initEditor() {
     const templateId = DEFAULT_TEMPLATE_BY_PHOTO_COUNT[Math.min(images.length, 4)] || 'two-columns';
-    appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID);
+    const photoIndices = images.map((_, i) => i);
+    appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID, photoIndices);
     selectedSlotIndex = null;
     activeGesture = null;
     updateCanvasSize();
@@ -170,9 +177,10 @@
   }
 
   function backToPicker() {
-    clearImages();
+    clearPool();
     appState = null;
     selectedSlotIndex = null;
+    pendingAddSlotIndex = null;
     fileInput.value = '';
     emptySlotOverlay.textContent = '';
     editorScreen.hidden = true;
@@ -193,7 +201,10 @@
     }
 
     try {
-      await loadInitialImages(validFiles);
+      clearPool();
+      for (const file of validFiles) {
+        await appendToPool(file);
+      }
       initEditor();
     } catch (err) {
       setPickerError(err && err.message ? err.message : '사진을 불러오지 못했습니다. 다시 시도해주세요.');
@@ -204,8 +215,21 @@
     const button = event.target.closest('button[data-template]');
     if (!button) return;
     const templateId = button.dataset.template;
-    appState = setTemplate(appState, templateId);
-    truncateImages(TEMPLATES[templateId].slotCount);
+    const newSlotCount = TEMPLATES[templateId].slotCount;
+    const indices = currentPhotoIndices(appState);
+
+    // 슬롯 수가 줄면 뒤쪽 슬롯이 물고 있던 사진을 풀에서 완전히 제거(tombstone)한다.
+    // 앞쪽 슬롯이 물고 있는 인덱스는 안 바뀌므로 남은 슬롯들의 참조는 그대로 유효하다.
+    for (let i = newSlotCount; i < indices.length; i++) {
+      const photoIndex = indices[i];
+      if (photoIndex !== null && imageUrls[photoIndex]) {
+        URL.revokeObjectURL(imageUrls[photoIndex]);
+        images[photoIndex] = null;
+        imageUrls[photoIndex] = null;
+      }
+    }
+
+    appState = setTemplate(appState, templateId, indices);
     selectedSlotIndex = null;
     updateTemplateButtons();
     render();
@@ -232,7 +256,8 @@
       return;
     }
     try {
-      await appendImage(file);
+      const photoIndex = await appendToPool(file);
+      appState = assignSlot(appState, pendingAddSlotIndex, photoIndex);
       setEditorError('');
       render();
       updateEmptySlotOverlay();
@@ -269,13 +294,16 @@
   }
 
   function imageSizeFor(slotIndex) {
-    const image = images[slotIndex];
+    const image = images[appState.slots[slotIndex].photoIndex];
     return { width: image.naturalWidth, height: image.naturalHeight };
   }
 
+  /** 채워진 슬롯만 터치 제스처의 대상이 된다. 빈 슬롯은 항상 오버레이 버튼이 캔버스 위에
+   *  겹쳐 있어서 터치가 그쪽으로 먼저 가므로, 여기까지 빈 슬롯 인덱스가 들어올 일은 없지만
+   *  방어적으로 한 번 더 확인한다 */
   function filledSlotAtPoint(point) {
     const slotIndex = findSlotIndexAtPoint(currentSlotRects(), point);
-    return slotIndex !== -1 && slotIndex < images.length ? slotIndex : -1;
+    return slotIndex !== -1 && appState.slots[slotIndex].photoIndex !== null ? slotIndex : -1;
   }
 
   function onTouchStart(event) {
@@ -338,11 +366,7 @@
       } else if (selectedSlotIndex === tappedIndex) {
         selectedSlotIndex = null;
       } else {
-        const a = selectedSlotIndex;
-        const b = tappedIndex;
-        [images[a], images[b]] = [images[b], images[a]];
-        [imageUrls[a], imageUrls[b]] = [imageUrls[b], imageUrls[a]];
-        appState = resetSlotTransforms(appState, [a, b]);
+        appState = swapSlots(appState, selectedSlotIndex, tappedIndex);
         selectedSlotIndex = null;
       }
       render();

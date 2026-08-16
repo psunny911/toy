@@ -27,9 +27,10 @@
    * @param {number} canvasWidth
    * @param {number} canvasHeight
    * @param {object} state - state.js의 상태 (templateId, slots, borderPx, cornerRadiusPx)
-   * @param {HTMLImageElement[]} images - 슬롯 i는 images[i]와 매핑된다 (앞에서부터 채움).
-   *   images[i]가 없으면 그 슬롯은 흰 배경 그대로 남는다 (빈 슬롯 = 흰 배경으로 저장됨)
-   * @param {number|null} selectedSlotIndex - 스왑 대기 중인 슬롯(하이라이트 표시), 없으면 null
+   * @param {HTMLImageElement[]} images - 사진 풀. 슬롯은 slot.photoIndex로 이 배열을 참조한다.
+   *   photoIndex가 null이거나 images[photoIndex]가 없으면 그 슬롯은 흰 배경 그대로 남는다
+   *   (빈 슬롯 = 흰 배경으로 저장됨)
+   * @param {number|null} selectedSlotIndex - 스왑/이동 대기 중인 슬롯(하이라이트 표시), 없으면 null
    */
   function renderCollage(ctx, canvasWidth, canvasHeight, state, images, selectedSlotIndex) {
     if (selectedSlotIndex === undefined) selectedSlotIndex = null;
@@ -41,7 +42,7 @@
 
     slotRects.forEach((rect, index) => {
       const slot = state.slots[index];
-      const image = images[index];
+      const image = slot.photoIndex === null ? null : images[slot.photoIndex];
       if (!image) return;
 
       ctx.save();
