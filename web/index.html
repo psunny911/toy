@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';"
+/>
+<title>사진 콜라주</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <section id="picker-screen">
+    <h1>사진 콜라주</h1>
+    <p>사진을 2~4장 선택하세요.</p>
+    <label class="file-button">
+      사진 선택
+      <input type="file" id="file-input" accept="image/*" multiple hidden />
+    </label>
+    <p id="picker-error" class="error" role="alert"></p>
+  </section>
+
+  <section id="editor-screen" hidden>
+    <div id="template-buttons">
+      <button type="button" data-template="two-columns">2분할</button>
+      <button type="button" data-template="three-mixed">3분할</button>
+      <button type="button" data-template="four-grid">4분할</button>
+    </div>
+
+    <canvas id="collage-canvas" width="800" height="800"></canvas>
+    <p class="hint">사진을 탭해서 서로 위치를 바꾸고, 드래그로 이동, 두 손가락으로 확대/축소하세요.</p>
+
+    <div class="controls">
+      <label>테두리 두께
+        <input type="range" id="border-slider" min="0" max="20" value="8" />
+      </label>
+      <label>모서리 둥글기
+        <input type="range" id="corner-slider" min="0" max="30" value="12" />
+      </label>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="reselect-button">다시 선택</button>
+      <button type="button" id="save-button" class="primary">저장</button>
+    </div>
+    <p id="save-status" role="status"></p>
+  </section>
+</div>
+<script src="js/geometry.js"></script>
+<script src="js/gestures.js"></script>
+<script src="js/state.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f4f4f5;
+  color: #18181b;
+  padding: 16px;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 1.25rem;
+  margin-bottom: 4px;
+}
+
+.file-button {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 20px;
+  background: #18181b;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.error {
+  color: #dc2626;
+  min-height: 1.2em;
+  margin-top: 12px;
+}
+
+#template-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+#template-buttons button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+#template-buttons button.active {
+  border-color: #18181b;
+  background: #18181b;
+  color: #fff;
+}
+
+#template-buttons button:disabled {
+  opacity: 0.35;
+}
+
+#collage-canvas {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: block;
+  border-radius: 8px;
+  touch-action: none;
+  background: #fff;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #71717a;
+  margin: 8px 0 16px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.controls label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  gap: 12px;
+}
+
+.controls input[type="range"] {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d4d4d8;
+  background: #fff;
+  font-weight: 600;
+}
+
+.actions button.primary {
+  background: #18181b;
+  color: #fff;
+  border-color: #18181b;
+}
+
+#save-status {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #16a34a;
+  text-align: center;
+}
