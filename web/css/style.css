@@ -48,59 +48,24 @@ body {
   margin: 0 0 6px;
 }
 
-.button-row {
+/* 필터 캐러셀 스타일 가로 스크롤 한 줄 칩 스트립 (비율/템플릿 공용) */
+.chip-strip {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 8px;
   margin-bottom: 12px;
+  padding-bottom: 2px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
 }
 
-.button-row button {
-  flex: 1 1 auto;
-  min-width: 72px;
-  padding: 8px;
-  border: 1px solid #d4d4d8;
-  background: #fff;
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
-
-.button-row button.active {
-  border-color: #18181b;
-  background: #18181b;
-  color: #fff;
-}
-
-.button-row button:disabled {
-  opacity: 0.35;
-}
-
-#template-buttons {
-  margin-bottom: 12px;
-}
-
-.template-group {
-  margin-bottom: 10px;
-  transition: opacity 0.15s ease;
-}
-
-.template-group.group-disabled {
-  opacity: 0.35;
-}
-
-.group-label {
-  font-size: 0.7rem;
-  color: #a1a1aa;
-  margin: 0 0 4px;
-}
-
-.chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.chip-strip::-webkit-scrollbar {
+  display: none;
 }
 
 .chip {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -110,16 +75,14 @@ body {
   border-radius: 999px;
   font-size: 0.8rem;
   color: #18181b;
+  white-space: nowrap;
+  scroll-snap-align: start;
 }
 
 .chip.active {
   border-color: #18181b;
   background: #18181b;
   color: #fff;
-}
-
-.chip:disabled {
-  opacity: 0.35;
 }
 
 /* 서브 칩 왼쪽에 붙는 레이아웃 미리보기 아이콘 */
@@ -182,6 +145,10 @@ body {
   flex: 1;
 }
 
+.canvas-wrap {
+  position: relative;
+}
+
 #collage-canvas {
   width: 100%;
   height: auto;
@@ -189,6 +156,26 @@ body {
   border-radius: 8px;
   touch-action: none;
   background: #fff;
+}
+
+.empty-slot-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.add-photo-button {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #a1a1aa;
+  background: rgba(244, 244, 245, 0.85);
+  color: #71717a;
+  font-size: 2rem;
+  line-height: 1;
+  border-radius: 8px;
+  pointer-events: auto;
 }
 
 .hint {

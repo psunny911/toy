@@ -11,14 +11,16 @@
   const MIN_ZOOM = 1;
   const MAX_ZOOM = 3;
 
+  // slotCount: 이 템플릿이 가진 슬롯 개수. 더 이상 "선택 가능 여부"를 가르지 않고,
+  // 슬롯 배열 크기와 기본 템플릿 추천에만 쓰인다 (모든 템플릿은 항상 선택 가능).
   const TEMPLATES = {
-    'two-columns': { photoCount: 2 },
-    'two-rows': { photoCount: 2 },
-    'three-columns': { photoCount: 3 },
-    'three-rows': { photoCount: 3 },
-    'three-one-two': { photoCount: 3 },
-    'three-two-one': { photoCount: 3 },
-    'four-grid': { photoCount: 4 },
+    'two-columns': { slotCount: 2 },
+    'two-rows': { slotCount: 2 },
+    'three-columns': { slotCount: 3 },
+    'three-rows': { slotCount: 3 },
+    'three-one-two': { slotCount: 3 },
+    'three-two-one': { slotCount: 3 },
+    'four-grid': { slotCount: 4 },
   };
 
   const DEFAULT_LONG_SIDE_PX = 1080;

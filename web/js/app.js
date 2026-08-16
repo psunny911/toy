@@ -1,6 +1,11 @@
 // DOM 와이어링 (파일 입력, 터치 제스처, 슬라이더, 저장) — Geometry/Gestures/State의 순수 함수만 사용.
 // 보안 원칙: innerHTML 미사용(textContent만 사용), eval 미사용, 원격 URL fetch 없음(로컬 blob만 사용).
 // 클래식 스크립트로 로드되므로 geometry.js/gestures.js/state.js/render.js가 이 파일보다 먼저 로드되어야 한다.
+//
+// 슬롯 모델: 사진 배열(images)과 슬롯은 인덱스로 직접 매핑된다 — 슬롯 i는 항상 images[i].
+// 템플릿은 사진 개수와 무관하게 항상 선택 가능하다. 템플릿을 바꿔 슬롯 수가 줄면
+// 뒤쪽 사진을 잘라내고(앞 사진 유지), 슬롯 수가 늘면 남는 칸은 빈 채로 두고
+// 맨 앞의 빈 칸에만 "+" 오버레이를 띄워 다음 사진을 추가할 수 있게 한다.
 (function () {
   const { findSlotIndexAtPoint, TEMPLATES, DEFAULT_LONG_SIDE_PX, getCanvasSize } = Geometry;
   const { distance, midpoint, isTap, computeZoomFromPinch } = Gestures;
@@ -8,7 +13,7 @@
     createInitialState,
     setTemplate,
     setAspectRatio,
-    swapSlots,
+    resetSlotTransforms,
     panSlot,
     zoomSlot,
     setBorder,
@@ -17,16 +22,19 @@
   } = State;
   const { renderCollage, getSlotRectsForState } = Render;
 
-  const TEMPLATE_BY_PHOTO_COUNT = { 2: 'two-columns', 3: 'three-one-two', 4: 'four-grid' };
+  const DEFAULT_TEMPLATE_BY_PHOTO_COUNT = { 1: 'two-columns', 2: 'two-columns', 3: 'three-one-two', 4: 'four-grid' };
 
   const pickerScreen = document.getElementById('picker-screen');
   const editorScreen = document.getElementById('editor-screen');
   const fileInput = document.getElementById('file-input');
   const pickerError = document.getElementById('picker-error');
+  const editorError = document.getElementById('editor-error');
   const templateButtonsEl = document.getElementById('template-buttons');
   const aspectButtonsEl = document.getElementById('aspect-buttons');
   const canvas = document.getElementById('collage-canvas');
   const ctx = canvas.getContext('2d');
+  const emptySlotOverlay = document.getElementById('empty-slot-overlay');
+  const addPhotoInput = document.getElementById('add-photo-input');
   const borderSlider = document.getElementById('border-slider');
   const cornerSlider = document.getElementById('corner-slider');
   const reselectButton = document.getElementById('reselect-button');
@@ -34,7 +42,7 @@
   const saveStatus = document.getElementById('save-status');
 
   let images = [];
-  let objectUrls = [];
+  let imageUrls = []; // images[i]에 대응하는 Object URL (revoke용, 인덱스 동기화됨)
   let appState = null;
   let selectedSlotIndex = null;
   let activeGesture = null;
@@ -43,30 +51,56 @@
     pickerError.textContent = message;
   }
 
+  function setEditorError(message) {
+    editorError.textContent = message;
+  }
+
   function setSaveStatus(message) {
     saveStatus.textContent = message;
   }
 
-  function revokeObjectUrls() {
-    for (const url of objectUrls) URL.revokeObjectURL(url);
-    objectUrls = [];
+  function clearImages() {
+    for (const url of imageUrls) URL.revokeObjectURL(url);
+    images = [];
+    imageUrls = [];
   }
 
-  async function loadImages(files) {
-    revokeObjectUrls();
-    const loaded = [];
-    for (const file of files) {
-      const url = URL.createObjectURL(file);
-      objectUrls.push(url);
-      const img = new Image();
+  /** 파일 하나를 디코딩해 images/imageUrls 끝에 추가한다 (앞에서부터 채우기) */
+  async function appendImage(file) {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    try {
       await new Promise((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error(`이미지를 디코딩하지 못했습니다: ${file.name || '(이름 없음)'}`));
         img.src = url;
       });
-      loaded.push(img);
+    } catch (err) {
+      URL.revokeObjectURL(url);
+      throw err;
     }
-    return loaded;
+    images.push(img);
+    imageUrls.push(url);
+  }
+
+  async function loadInitialImages(files) {
+    clearImages();
+    for (const file of files) {
+      await appendImage(file);
+    }
+  }
+
+  /** 템플릿 슬롯 수보다 사진이 많으면 뒤쪽부터 잘라낸다 (앞 사진 유지) */
+  function truncateImages(slotCount) {
+    if (images.length <= slotCount) return;
+    for (let i = slotCount; i < imageUrls.length; i++) URL.revokeObjectURL(imageUrls[i]);
+    images = images.slice(0, slotCount);
+    imageUrls = imageUrls.slice(0, slotCount);
+  }
+
+  function isLikelyImageFile(file) {
+    const type = (file.type || '').toLowerCase();
+    return type === '' || type.startsWith('image/');
   }
 
   function currentSlotRects() {
@@ -85,14 +119,7 @@
 
   function updateTemplateButtons() {
     for (const button of templateButtonsEl.querySelectorAll('button')) {
-      const templateId = button.dataset.template;
-      const requiredCount = TEMPLATES[templateId].photoCount;
-      const enabled = requiredCount === images.length;
-      button.disabled = !enabled;
-      button.classList.toggle('active', templateId === appState.templateId);
-    }
-    for (const group of templateButtonsEl.querySelectorAll('.template-group')) {
-      group.classList.toggle('group-disabled', Number(group.dataset.count) !== images.length);
+      button.classList.toggle('active', button.dataset.template === appState.templateId);
     }
   }
 
@@ -102,38 +129,55 @@
     }
   }
 
-  function initEditor(loadedImages) {
-    images = loadedImages;
-    const templateId = TEMPLATE_BY_PHOTO_COUNT[images.length];
-    appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID, images.map((_, i) => i));
+  /** 맨 앞의 빈 슬롯 위치에만 "+" 추가 버튼을 올린다 (사진은 항상 앞에서부터 채워지므로) */
+  function updateEmptySlotOverlay() {
+    emptySlotOverlay.textContent = '';
+    const slotCount = appState.slots.length;
+    if (images.length >= slotCount) return;
+
+    const nextIndex = images.length;
+    const rect = currentSlotRects()[nextIndex];
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'add-photo-button';
+    button.style.left = (rect.x / canvas.width) * 100 + '%';
+    button.style.top = (rect.y / canvas.height) * 100 + '%';
+    button.style.width = (rect.width / canvas.width) * 100 + '%';
+    button.style.height = (rect.height / canvas.height) * 100 + '%';
+    button.setAttribute('aria-label', '사진 추가');
+    button.textContent = '+';
+    button.addEventListener('click', () => {
+      addPhotoInput.value = '';
+      addPhotoInput.click();
+    });
+    emptySlotOverlay.appendChild(button);
+  }
+
+  function initEditor() {
+    const templateId = DEFAULT_TEMPLATE_BY_PHOTO_COUNT[Math.min(images.length, 4)] || 'two-columns';
+    appState = createInitialState(templateId, DEFAULT_ASPECT_RATIO_ID);
     selectedSlotIndex = null;
     activeGesture = null;
     updateCanvasSize();
     updateTemplateButtons();
     updateAspectButtons();
     render();
+    updateEmptySlotOverlay();
     pickerScreen.hidden = true;
     editorScreen.hidden = false;
     setSaveStatus('');
+    setEditorError('');
   }
 
   function backToPicker() {
-    revokeObjectUrls();
-    images = [];
+    clearImages();
     appState = null;
     selectedSlotIndex = null;
     fileInput.value = '';
+    emptySlotOverlay.textContent = '';
     editorScreen.hidden = true;
     pickerScreen.hidden = false;
     setPickerError('');
-  }
-
-  // 일부 안드로이드 갤러리/클라우드 제공자는 File.type을 빈 문자열로 내려준다.
-  // 그런 경우까지 걸러내면 실제로는 이미지인 파일도 선택 단계에서 전부 탈락하므로,
-  // MIME 타입이 명시적으로 비-이미지일 때만 걸러내고 최종 판별은 아래 <img> 디코딩에 맡긴다.
-  function isLikelyImageFile(file) {
-    const type = (file.type || '').toLowerCase();
-    return type === '' || type.startsWith('image/');
   }
 
   fileInput.addEventListener('change', async (event) => {
@@ -143,14 +187,14 @@
 
     const validFiles = Array.from(files).filter(isLikelyImageFile).slice(0, 4);
 
-    if (validFiles.length < 2) {
-      setPickerError('이미지 파일을 2장 이상 선택해주세요.');
+    if (validFiles.length < 1) {
+      setPickerError('이미지 파일을 선택해주세요.');
       return;
     }
 
     try {
-      const loaded = await loadImages(validFiles);
-      initEditor(loaded);
+      await loadInitialImages(validFiles);
+      initEditor();
     } catch (err) {
       setPickerError(err && err.message ? err.message : '사진을 불러오지 못했습니다. 다시 시도해주세요.');
     }
@@ -158,21 +202,43 @@
 
   templateButtonsEl.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-template]');
-    if (!button || button.disabled) return;
-    appState = setTemplate(appState, button.dataset.template, images.map((_, i) => i));
+    if (!button) return;
+    const templateId = button.dataset.template;
+    appState = setTemplate(appState, templateId);
+    truncateImages(TEMPLATES[templateId].slotCount);
     selectedSlotIndex = null;
     updateTemplateButtons();
     render();
+    updateEmptySlotOverlay();
   });
 
   aspectButtonsEl.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-aspect]');
     if (!button) return;
-    appState = setAspectRatio(appState, button.dataset.aspect, images.map((_, i) => i));
+    appState = setAspectRatio(appState, button.dataset.aspect);
     selectedSlotIndex = null;
     updateCanvasSize();
     updateAspectButtons();
     render();
+    updateEmptySlotOverlay();
+  });
+
+  addPhotoInput.addEventListener('change', async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    const file = Array.from(files).find(isLikelyImageFile);
+    if (!file) {
+      setEditorError('이미지 파일을 선택해주세요.');
+      return;
+    }
+    try {
+      await appendImage(file);
+      setEditorError('');
+      render();
+      updateEmptySlotOverlay();
+    } catch (err) {
+      setEditorError(err && err.message ? err.message : '사진을 추가하지 못했습니다.');
+    }
   });
 
   borderSlider.addEventListener('input', (event) => {
@@ -203,21 +269,24 @@
   }
 
   function imageSizeFor(slotIndex) {
-    const image = images[appState.slots[slotIndex].photoIndex];
+    const image = images[slotIndex];
     return { width: image.naturalWidth, height: image.naturalHeight };
+  }
+
+  function filledSlotAtPoint(point) {
+    const slotIndex = findSlotIndexAtPoint(currentSlotRects(), point);
+    return slotIndex !== -1 && slotIndex < images.length ? slotIndex : -1;
   }
 
   function onTouchStart(event) {
     event.preventDefault();
     const points = touchPoints(event);
-    const rects = currentSlotRects();
 
     if (points.length === 1) {
-      const slotIndex = findSlotIndexAtPoint(rects, points[0]);
+      const slotIndex = filledSlotAtPoint(points[0]);
       activeGesture = slotIndex === -1 ? null : { type: 'pending', slotIndex, startPoint: points[0], lastPoint: points[0] };
     } else if (points.length === 2) {
-      const mid = midpoint(points[0], points[1]);
-      const slotIndex = findSlotIndexAtPoint(rects, mid);
+      const slotIndex = filledSlotAtPoint(midpoint(points[0], points[1]));
       activeGesture =
         slotIndex === -1
           ? null
@@ -263,12 +332,17 @@
   function onTouchEnd(event) {
     event.preventDefault();
     if (activeGesture && activeGesture.type === 'pending' && event.touches.length === 0) {
+      const tappedIndex = activeGesture.slotIndex;
       if (selectedSlotIndex === null) {
-        selectedSlotIndex = activeGesture.slotIndex;
-      } else if (selectedSlotIndex === activeGesture.slotIndex) {
+        selectedSlotIndex = tappedIndex;
+      } else if (selectedSlotIndex === tappedIndex) {
         selectedSlotIndex = null;
       } else {
-        appState = swapSlots(appState, selectedSlotIndex, activeGesture.slotIndex);
+        const a = selectedSlotIndex;
+        const b = tappedIndex;
+        [images[a], images[b]] = [images[b], images[a]];
+        [imageUrls[a], imageUrls[b]] = [imageUrls[b], imageUrls[a]];
+        appState = resetSlotTransforms(appState, [a, b]);
         selectedSlotIndex = null;
       }
       render();
