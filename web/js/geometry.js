@@ -23,7 +23,7 @@
     'four-grid': { slotCount: 4 },
   };
 
-  const DEFAULT_LONG_SIDE_PX = 1080;
+  const DEFAULT_LONG_SIDE_PX = 2160;
 
   const ASPECT_RATIOS = {
     square: { ratioW: 1, ratioH: 1 },
