@@ -1,4 +1,4 @@
-name: Deploy web/ to GitHub Pages
+name: Deploy web/ and tracker/ to GitHub Pages
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - claude/android-language-learning-tracker-s3e7rz
     paths:
       - "web/**"
+      - "tracker/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
@@ -28,13 +29,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Test tracker logic
+        working-directory: tracker
+        run: node --test
+
+      # 사이트 루트 = web/ (사진 콜라주), /tracker/ = 데일리 트래커
+      - name: Assemble site
+        run: |
+          mkdir -p _site/tracker
+          cp -r web/. _site/
+          cp -r tracker/index.html tracker/manifest.webmanifest tracker/sw.js tracker/css tracker/js tracker/icons _site/tracker/
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload web/ as Pages artifact
+      - name: Upload site as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
