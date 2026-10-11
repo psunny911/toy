@@ -14,7 +14,7 @@ function withTrackers() {
 test('addTracker normalizes input and rejects empty names', () => {
   const data = withTrackers();
   assert.deepEqual(data.trackers[0], {
-    id: 'pill', name: '영양제', emoji: '✅', color: '#F6C1CC', type: 'check', goal: 1, step: 1, unit: '', createdAt: TODAY,
+    id: 'pill', name: '영양제', emoji: '✅', color: '#F6C1CC', type: 'check', goal: 1, step: 1, unit: '', trackOnly: false, createdAt: TODAY,
   });
   assert.equal(data.trackers[1].goal, 30);
   assert.throws(() => S.addTracker(data, { name: '  ' }, { id: 'x', today: TODAY }));
@@ -96,4 +96,30 @@ test('sanitizeData keeps only known, valid fields', () => {
   assert.equal('extra' in data.trackers[0], false);
   assert.deepEqual(data.entries, { '2026-10-01': { a: 2 } });
   assert.throws(() => S.sanitizeData({ foo: 1 }));
+});
+
+test('trackOnly is kept as a boolean and survives type changes', () => {
+  let data = S.addTracker(S.createEmptyData(), { name: '커피', type: 'count', goal: 3, trackOnly: true }, { id: 'c', today: TODAY });
+  assert.equal(data.trackers[0].trackOnly, true);
+  data = S.updateTracker(data, 'c', { type: 'check' });
+  assert.equal(data.trackers[0].trackOnly, true);
+  data = S.updateTracker(data, 'c', { trackOnly: false });
+  assert.equal(data.trackers[0].trackOnly, false);
+  const plain = S.addTracker(S.createEmptyData(), { name: 'x', trackOnly: 'yes' }, { id: 'x', today: TODAY });
+  assert.equal(plain.trackers[0].trackOnly, false);
+});
+
+test('toggleCheck clears any recorded value instead of treating partial as undone', () => {
+  let data = withTrackers();
+  data = S.setValue(data, TODAY, 'pill', 1);
+  data = S.toggleCheck(data, TODAY, 'pill');
+  assert.equal(S.getValue(data, TODAY, 'pill'), 0);
+});
+
+test('sanitizeData keeps trackOnly from backups and defaults old backups to false', () => {
+  const data = S.sanitizeData({
+    trackers: [{ id: 'a', name: 'A', trackOnly: true }, { id: 'b', name: 'B' }],
+    entries: {},
+  });
+  assert.deepEqual(data.trackers.map((t) => t.trackOnly), [true, false]);
 });

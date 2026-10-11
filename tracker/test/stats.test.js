@@ -61,3 +61,26 @@ test('rangeStats excludes days before start and after today', () => {
   const s = St.rangeStats(data, S.findTracker(data, 'pill'), '2026-10-01', '2026-10-31', TODAY);
   assert.deepEqual(s, { doneDays: 2, eligibleDays: 7, rate: 2 / 7, total: 2 });
 });
+
+test('trackOnly trackers are excluded from day completion', () => {
+  let data = setup();
+  data = S.addTracker(data, { name: 'coffee', type: 'count', goal: 3, trackOnly: true }, { id: 'coffee', today: '2026-10-01' });
+  data = S.toggleCheck(data, TODAY, 'pill');
+  data = S.setValue(data, TODAY, 'coffee', 2);
+  const c = St.dayCompletion(data, TODAY);
+  assert.equal(c.total, 2);
+  assert.equal(c.done, 1);
+  assert.deepEqual(St.goalTrackers(data).map((t) => t.id), ['pill', 'run']);
+});
+
+test('trackOnly trackers count any recorded value as a recorded day', () => {
+  let data = setup();
+  data = S.addTracker(data, { name: 'coffee', type: 'count', goal: 3, trackOnly: true }, { id: 'coffee', today: '2026-10-09' });
+  const coffee = S.findTracker(data, 'coffee');
+  data = S.setValue(data, '2026-10-10', 'coffee', 1);
+  data = S.setValue(data, TODAY, 'coffee', 2);
+  assert.equal(St.isDoneOn(data, coffee, TODAY), true);
+  assert.equal(St.progress(coffee, 1), 1);
+  assert.equal(St.currentStreak(data, coffee, TODAY), 2);
+  assert.deepEqual(St.rangeStats(data, coffee, '2026-10-05', TODAY, TODAY), { doneDays: 2, eligibleDays: 3, rate: 2 / 3, total: 3 });
+});

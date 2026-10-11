@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="css/style.css?v=1" />
+<link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 <body>
 <div id="app">
@@ -78,8 +78,17 @@
       </div>
     </div>
 
+    <label class="toggle-field">
+      <input type="checkbox" id="f-track-only" name="trackOnly" />
+      <span class="toggle-switch" aria-hidden="true"></span>
+      <span>
+        <span class="toggle-title">기록만 하기</span>
+        <span class="toggle-desc">목표 없이 기록만 남기고, 달성률에는 포함하지 않아요 (예: 커피, 야식)</span>
+      </span>
+    </label>
+
     <div id="count-fields" class="field-row three" hidden>
-      <label class="field">
+      <label class="field" id="goal-field">
         <span class="field-label">하루 목표</span>
         <input id="f-goal" name="goal" type="number" inputmode="numeric" min="1" value="30" />
       </label>
@@ -125,10 +134,10 @@
 
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="js/dates.js?v=1"></script>
-<script src="js/store.js?v=1"></script>
-<script src="js/stats.js?v=1"></script>
-<script src="js/storage.js?v=1"></script>
-<script src="js/app.js?v=1"></script>
+<script src="js/dates.js?v=2"></script>
+<script src="js/store.js?v=2"></script>
+<script src="js/stats.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
 </body>
 </html>

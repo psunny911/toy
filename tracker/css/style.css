@@ -1058,3 +1058,143 @@ button:disabled {
     animation: none !important;
   }
 }
+
+/* ---------- 기록만 하는 항목 (trackOnly) ---------- */
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 2px -2px;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.section-heading .muted {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* 목표 항목보다 한 톤 가볍게: 테두리 대신 점선, 완료 시에도 옅은 배경만 */
+.tracker-card.track-only {
+  box-shadow: none;
+  border: 2px dashed var(--line);
+}
+
+.tracker-card.track-only.done {
+  border-color: var(--c);
+  border-style: dashed;
+}
+
+.wg-section {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.wg-section .section-heading {
+  margin: 0;
+}
+
+.wcell.value {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.card .hint {
+  margin-top: -6px;
+}
+
+.card-subtitle {
+  margin: 18px 0 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--c-soft);
+  font-size: 0.85rem;
+}
+
+.toggle-field {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.toggle-field input {
+  position: absolute;
+  opacity: 0;
+}
+
+.toggle-switch {
+  flex: none;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+
+.toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+}
+
+.toggle-field input:checked + .toggle-switch {
+  background: var(--primary);
+}
+
+.toggle-field input:checked + .toggle-switch::after {
+  transform: translateX(18px);
+}
+
+.toggle-field input:focus-visible + .toggle-switch {
+  outline: 2px solid var(--primary-strong);
+  outline-offset: 2px;
+}
+
+.toggle-title {
+  display: block;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.toggle-desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}

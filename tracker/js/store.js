@@ -2,10 +2,12 @@
 //
 // data = {
 //   version: 1,
-//   trackers: [{ id, name, emoji, color, type: 'check'|'count', goal, step, unit, createdAt }],
+//   trackers: [{ id, name, emoji, color, type: 'check'|'count', goal, step, unit, trackOnly, createdAt }],
 //   entries: { 'YYYY-MM-DD': { [trackerId]: number } }   // 0인 값은 저장하지 않는다
 // }
 // 'check' 트래커는 goal=1, 값은 0/1. 'count' 트래커는 값이 goal 이상이면 달성.
+// trackOnly 트래커는 목표 없이 기록만 한다 — 달성률 집계에서 빠지고, 값이 있으면 "기록한 날"로 본다.
+// (goal은 지워지지 않고 남아 있어서 나중에 일반 트래커로 되돌리면 그대로 쓴다.)
 // 저장 방식(localStorage 등)은 storage.js가 맡는다 — 앱 전환 시 이 파일은 그대로 재사용한다.
 (function (root, factory) {
   const Dates = typeof module !== 'undefined' && module.exports ? require('./dates.js') : root.Dates;
@@ -40,6 +42,8 @@
     { name: '물 마시기', emoji: '💧', color: '#B3E3F2', type: 'count', goal: 8, step: 1, unit: '잔' },
     { name: '독서', emoji: '📖', color: '#CDB9F0', type: 'count', goal: 20, step: 5, unit: '쪽' },
     { name: '영어 단어', emoji: '🔤', color: '#F8E3A1', type: 'count', goal: 20, step: 5, unit: '개' },
+    { name: '커피', emoji: '☕', color: '#FFD1B3', type: 'count', goal: 1, step: 1, unit: '잔', trackOnly: true },
+    { name: '야식', emoji: '🍜', color: '#CFE0B8', type: 'check', goal: 1, step: 1, unit: '', trackOnly: true },
   ];
 
   function createEmptyData() {
@@ -61,8 +65,9 @@
     const type = input.type === 'count' ? 'count' : 'check';
     const emoji = Array.from(String(input.emoji || '').trim()).slice(0, 4).join('') || '✅';
     const color = COLOR_HEXES.includes(input.color) ? input.color : COLORS[0].hex;
+    const trackOnly = input.trackOnly === true;
     if (type === 'check') {
-      return { name, emoji, color, type, goal: 1, step: 1, unit: '' };
+      return { name, emoji, color, type, goal: 1, step: 1, unit: '', trackOnly };
     }
     return {
       name,
@@ -72,6 +77,7 @@
       goal: toPositiveInt(input.goal, 1),
       step: toPositiveInt(input.step, 1),
       unit: String(input.unit || '').trim().slice(0, MAX_UNIT_LENGTH),
+      trackOnly,
     };
   }
 
@@ -160,8 +166,7 @@
   function toggleCheck(data, key, id) {
     const tracker = findTracker(data, id);
     if (!tracker) return data;
-    const done = getValue(data, key, id) >= tracker.goal;
-    return setValue(data, key, id, done ? 0 : tracker.goal);
+    return setValue(data, key, id, getValue(data, key, id) > 0 ? 0 : tracker.goal);
   }
 
   /** count 트래커를 step 단위로 증감 (direction = +1 / -1). */

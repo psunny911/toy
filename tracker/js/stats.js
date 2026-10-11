@@ -14,13 +14,20 @@
 })(typeof self !== 'undefined' ? self : this, function (Dates, Store) {
   const { getValue } = Store;
 
+  /** 달성 여부. 기록 전용(trackOnly) 트래커는 값이 있으면 true ("기록한 날"). */
   function isDone(tracker, value) {
-    return value >= tracker.goal;
+    return tracker.trackOnly ? value > 0 : value >= tracker.goal;
   }
 
-  /** 0~1 진행률 */
+  /** 0~1 진행률. 기록 전용 트래커는 0 또는 1. */
   function progress(tracker, value) {
+    if (tracker.trackOnly) return value > 0 ? 1 : 0;
     return Math.max(0, Math.min(1, value / tracker.goal));
+  }
+
+  /** 달성률 집계 대상인 트래커 (기록 전용 제외). */
+  function goalTrackers(data) {
+    return data.trackers.filter((t) => !t.trackOnly);
   }
 
   function isDoneOn(data, tracker, key) {
@@ -35,12 +42,15 @@
     return start;
   }
 
-  /** 해당 날짜에 집계 대상인 트래커 (시작일 이후). */
+  /** 해당 날짜에 달성률 집계 대상인 트래커 (시작일 이후, 기록 전용 제외). */
   function trackersActiveOn(data, key) {
-    return data.trackers.filter((t) => startKey(data, t) <= key);
+    return goalTrackers(data).filter((t) => startKey(data, t) <= key);
   }
 
-  /** 하루 전체 달성 현황 { done, total, ratio }. 진행률은 count 트래커의 부분 진행도 반영한다. */
+  /**
+   * 하루 전체 달성 현황 { done, total, ratio }. 진행률은 count 트래커의 부분 진행도 반영한다.
+   * 기록 전용 트래커는 포함하지 않는다.
+   */
   function dayCompletion(data, key) {
     const active = trackersActiveOn(data, key);
     let done = 0;
@@ -108,6 +118,7 @@
     isDone,
     progress,
     isDoneOn,
+    goalTrackers,
     startKey,
     trackersActiveOn,
     dayCompletion,
