@@ -48,10 +48,11 @@ test('cleanText keeps line breaks, drops blank lines, caps line count', () => {
 });
 
 test('normalizePrefs falls back to defaults', () => {
-  assert.deepEqual(C.normalizePrefs(null), { seconds: 5, stampDir: 'horizontal' });
-  assert.deepEqual(C.normalizePrefs({ seconds: 3, stampDir: 'vertical' }), { seconds: 3, stampDir: 'vertical' });
-  assert.deepEqual(C.normalizePrefs({ seconds: 4, stampDir: 'diagonal' }), { seconds: 5, stampDir: 'horizontal' });
-  assert.deepEqual(C.normalizePrefs({ seconds: '3' }), { seconds: 5, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs(null), { seconds: 3, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs({ seconds: 1, stampDir: 'vertical' }), { seconds: 1, stampDir: 'vertical' });
+  assert.deepEqual(C.normalizePrefs({ seconds: 5 }), { seconds: 5, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs({ seconds: 4, stampDir: 'diagonal' }), { seconds: 3, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs({ seconds: '1' }), { seconds: 3, stampDir: 'horizontal' });
 });
 
 test('setText cleans whitespace, caps length, keeps identity when unchanged', () => {
