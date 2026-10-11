@@ -12,7 +12,8 @@
     clearBtn: $('clear-btn'), makeBtn: $('make-btn'),
     clipSheet: $('clip-sheet'), clipTitle: $('clip-sheet-title'), clipPlayer: $('clip-player'),
     clipVideo: $('clip-video'), clipOverlay: $('clip-overlay'), clipCaption: $('clip-caption'),
-    clipLeft: $('clip-left'), clipRight: $('clip-right'), clipDelete: $('clip-delete'),
+    clipLeft: $('clip-left'), clipRight: $('clip-right'), clipSave: $('clip-save'), clipDelete: $('clip-delete'),
+    secondsSeg: $('seconds-seg'), stampSeg: $('stamp-seg'), saveHint: $('save-hint'),
     renderSheet: $('render-sheet'), renderTitle: $('render-title'), renderClose: $('render-close'),
     renderProgress: $('render-progress'), progressBar: $('progress-bar'), progressText: $('progress-text'),
     renderResult: $('render-result'), resultPlayer: $('result-player'), resultVideo: $('result-video'), saveBtn: $('save-btn'), shareBtn: $('share-btn'),
@@ -20,21 +21,40 @@
   };
 
   const RING_LEN = 2 * Math.PI * 36;
+  const PREFS_KEY = 'vlog.prefs.v1';
+  // iPadOS는 데스크톱 Safari처럼 보이므로 터치 지원으로 구분한다
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const mimeType = window.MediaRecorder ? Clips.pickMimeType((t) => MediaRecorder.isTypeSupported(t)) : '';
 
   const state = {
     clips: [],
     stream: null,
     facing: 'environment',
-    recording: null, // { startedAt }
+    recording: null, // { startedAt, seconds }
+    prefs: Clips.normalizePrefs(readPrefs()),
     editingId: null,
     rendering: false,
   };
   const thumbUrls = new Map(); // clip.id → object URL
   let resultUrl = null;
   let resultBlob = null;
+  let resultFile = null;
 
   // ---------- 공통 ----------
+
+  function readPrefs() {
+    try { return JSON.parse(localStorage.getItem(PREFS_KEY)); } catch (e) { return null; }
+  }
+
+  function savePrefs() {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(state.prefs)); } catch (e) { /* 설정 저장은 선택 */ }
+  }
+
+  /** 문구 입력칸: 줄바꿈은 MAX_LINES줄까지만 */
+  function limitLines(textarea) {
+    const lines = textarea.value.split('\n');
+    if (lines.length > Clips.MAX_LINES) textarea.value = lines.slice(0, Clips.MAX_LINES).join('\n');
+  }
 
   let toastTimer = null;
   function toast(msg) {
@@ -139,11 +159,12 @@
   // 실시간 미리보기 오버레이: 녹화 중엔 시작 시각, 아니면 현재 시각
   function liveLoop() {
     const at = state.recording ? state.recording.startedAt : Date.now();
-    paintOverlay(els.liveOverlay, { stamp: Format.formatStamp(at), text: Clips.cleanText(els.caption.value) });
+    paintOverlay(els.liveOverlay, { stamp: Format.formatStamp(at), text: Clips.cleanText(els.caption.value), stampDir: state.prefs.stampDir });
     if (state.recording) {
-      const left = Clips.CLIP_SECONDS - (Date.now() - state.recording.startedAt) / 1000;
+      const { seconds } = state.recording;
+      const left = seconds - (Date.now() - state.recording.startedAt) / 1000;
       els.recSec.textContent = Math.max(0, Math.ceil(left));
-      const p = Math.min(1, 1 - left / Clips.CLIP_SECONDS);
+      const p = Math.min(1, 1 - left / seconds);
       els.recRing.style.strokeDashoffset = String(RING_LEN * (1 - p));
     }
     requestAnimationFrame(liveLoop);
@@ -179,17 +200,20 @@
     recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
 
     const startedAt = Date.now();
-    state.recording = { startedAt };
+    const { seconds } = state.prefs;
+    state.recording = { startedAt, seconds };
+    els.recSec.textContent = seconds;
     els.recBtn.classList.add('recording');
     els.recBadge.hidden = false;
     els.flipBtn.disabled = true;
     els.caption.disabled = true;
+    setSegDisabled(true);
 
     const stopped = new Promise((resolve) => { recorder.onstop = resolve; });
     recorder.start();
-    setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, Clips.CLIP_SECONDS * 1000);
+    setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, seconds * 1000);
     await stopped;
-    const duration = Math.min(Clips.CLIP_SECONDS, (Date.now() - startedAt) / 1000);
+    const duration = Math.min(seconds, (Date.now() - startedAt) / 1000);
 
     state.recording = null;
     els.recBtn.classList.remove('recording');
@@ -197,6 +221,7 @@
     els.recBadge.hidden = true;
     els.flipBtn.disabled = false;
     els.caption.disabled = false;
+    setSegDisabled(false);
 
     if (!chunks.length) {
       toast('녹화된 내용이 없어요. 다시 시도해 주세요');
@@ -246,7 +271,10 @@
     els.clearBtn.hidden = clips.length === 0;
     els.makeBtn.disabled = clips.length === 0 || state.rendering;
     els.makeBtn.textContent = clips.length ? `영상 만들기 · ${Format.formatDuration(Clips.totalDuration(clips))}` : '영상 만들기';
-    els.nextHint.textContent = clips.length ? `${clips.length + 1}번째 클립` : '5초씩 녹화돼요';
+    els.nextHint.textContent = clips.length ? `${clips.length + 1}번째 클립` : `${state.prefs.seconds}초씩 녹화돼요`;
+    els.recBtn.setAttribute('aria-label', `${state.prefs.seconds}초 녹화`);
+    paintSeg(els.secondsSeg, String(state.prefs.seconds));
+    paintSeg(els.stampSeg, state.prefs.stampDir);
 
     els.clipList.replaceChildren(...clips.map((clip, i) => {
       const li = document.createElement('li');
@@ -311,7 +339,7 @@
     const loop = () => {
       const c = editingClip();
       if (!c || els.clipSheet.hidden) return;
-      paintOverlay(els.clipOverlay, { stamp: Format.formatStamp(c.recordedAt), text: Clips.cleanText(els.clipCaption.value) });
+      paintOverlay(els.clipOverlay, { stamp: Format.formatStamp(c.recordedAt), text: Clips.cleanText(els.clipCaption.value), stampDir: state.prefs.stampDir });
       clipLoopRaf = requestAnimationFrame(loop);
     };
     loop();
@@ -358,7 +386,14 @@
 
   els.clipLeft.addEventListener('click', () => moveEditing(-1));
   els.clipRight.addEventListener('click', () => moveEditing(1));
-  els.clipCaption.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.clipCaption.blur(); });
+  els.clipCaption.addEventListener('input', () => limitLines(els.clipCaption));
+
+  els.clipSave.addEventListener('click', async () => {
+    const id = state.editingId;
+    await closeClip(); // 고친 문구를 먼저 저장
+    const i = state.clips.findIndex((c) => c.id === id);
+    if (i >= 0) renderAndShow([state.clips[i]], `${i + 1}번째 클립`);
+  });
 
   els.clipDelete.addEventListener('click', async () => {
     const id = state.editingId;
@@ -385,49 +420,57 @@
 
   // ---------- 영상 만들기 ----------
 
-  async function makeVlog() {
-    if (!state.clips.length || state.rendering || state.recording) return;
+  /** clips를 (시각·문구를 입혀) 하나의 영상으로 렌더하고 결과 시트를 띄운다. 개별 클립 저장도 이걸 쓴다. */
+  async function renderAndShow(clips, label) {
+    if (!clips.length || state.rendering || state.recording) return;
     state.rendering = true;
     render();
-    els.renderTitle.textContent = '영상 만드는 중';
+    const single = clips.length === 1;
+    const working = single
+      ? '시각과 문구를 입히는 중이에요. 화면을 켜 둔 채로 기다려 주세요.'
+      : '클립을 차례로 재생하면서 합치고 있어요. 화면을 켜 둔 채로 기다려 주세요.';
+    els.renderTitle.textContent = single ? `${label} 만드는 중` : '영상 만드는 중';
     els.renderClose.hidden = true;
     els.renderProgress.hidden = false;
     els.renderResult.hidden = true;
     els.progressBar.style.width = '0%';
-    els.progressText.textContent = '클립을 차례로 재생하면서 합치고 있어요. 화면을 켜 둔 채로 기다려 주세요.';
+    els.progressText.textContent = working;
     els.renderSheet.hidden = false;
 
     let wakeLock = null;
     try { wakeLock = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch (e) { /* 선택 기능 */ }
 
-    // 합치는 동안 카메라를 꺼서 기기 부담을 줄인다
+    // 렌더하는 동안 카메라를 꺼서 기기 부담을 줄인다
     stopCamera();
-    const total = Clips.totalDuration(state.clips);
-    const madeAt = Date.now();
+    const total = Clips.totalDuration(clips);
     try {
-      resultBlob = await Merge.renderVlog(state.clips, {
+      resultBlob = await Merge.renderVlog(clips, {
         mimeType,
+        stampDir: state.prefs.stampDir,
         onProgress: (p) => {
           els.progressBar.style.width = `${Math.round(p * 100)}%`;
-          els.progressText.textContent = `${Format.formatDuration(p * total)} / ${Format.formatDuration(total)} 합치는 중… 화면을 켜 둔 채로 기다려 주세요.`;
+          els.progressText.textContent = `${Format.formatDuration(p * total)} / ${Format.formatDuration(total)} · ${working}`;
         },
       });
       if (resultUrl) URL.revokeObjectURL(resultUrl);
       resultUrl = URL.createObjectURL(resultBlob);
       els.resultVideo.src = resultUrl;
-      const name = Format.fileName(madeAt, Clips.extForMime(resultBlob.type));
-      els.saveBtn.href = resultUrl;
-      els.saveBtn.download = name;
-      const file = new File([resultBlob], name, { type: resultBlob.type });
-      els.shareBtn.hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
-      els.shareBtn.onclick = () => navigator.share({ files: [file], title: '브이로그' }).catch(() => {});
-      els.renderTitle.textContent = `완성 · ${Format.formatDuration(total)}`;
+      // 클립 하나면 그 클립의 촬영시각으로, 합친 영상이면 만든 시각으로 이름을 붙인다
+      const name = Format.fileName(single ? clips[0].recordedAt : Date.now(), Clips.extForMime(resultBlob.type));
+      resultFile = new File([resultBlob], name, { type: resultBlob.type });
+      const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [resultFile] }));
+      // iOS는 공유 창의 '동영상 저장'이 사진 앱으로 가는 유일한 길이라 저장 버튼이 곧 공유다
+      els.shareBtn.hidden = !canShareFile || isIOS;
+      els.saveHint.textContent = isIOS && canShareFile
+        ? '저장을 누른 뒤 공유 창에서 ‘동영상 저장’을 고르면 사진 앱에 들어가요.'
+        : '기기의 다운로드 폴더에 저장돼요. 갤러리(사진) 앱에서 바로 볼 수 있어요.';
+      els.renderTitle.textContent = `${single ? label : '완성'} · ${Format.formatDuration(total)}`;
       els.renderProgress.hidden = true;
       els.renderResult.hidden = false;
     } catch (e) {
       console.error(e);
       els.renderTitle.textContent = '만들지 못했어요';
-      els.progressText.textContent = '영상을 합치는 중에 문제가 생겼어요. 다시 시도해 주세요.';
+      els.progressText.textContent = '영상을 만드는 중에 문제가 생겼어요. 다시 시도해 주세요.';
     } finally {
       state.rendering = false;
       els.renderClose.hidden = false;
@@ -436,14 +479,45 @@
     }
   }
 
+  function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  async function shareFile(file) {
+    try {
+      await navigator.share({ files: [file], title: '브이로그' });
+      return true;
+    } catch (e) {
+      return e && e.name === 'AbortError'; // 사용자가 닫은 건 실패가 아니다
+    }
+  }
+
+  async function saveToGallery() {
+    if (!resultFile) return;
+    if (isIOS && navigator.canShare && navigator.canShare({ files: [resultFile] })) {
+      if (await shareFile(resultFile)) return;
+    }
+    downloadFile(resultFile);
+    toast('저장했어요');
+  }
+
+  els.saveBtn.addEventListener('click', saveToGallery);
+  els.shareBtn.addEventListener('click', () => { if (resultFile) shareFile(resultFile); });
+  els.makeBtn.addEventListener('click', () => renderAndShow(state.clips));
+
   function closeRender() {
     if (state.rendering) return;
     els.renderSheet.hidden = true;
     els.resultVideo.pause();
     startCamera();
   }
-
-  els.makeBtn.addEventListener('click', makeVlog);
 
   // ---------- 시트 공통 ----------
 
@@ -466,7 +540,33 @@
     state.facing = state.facing === 'user' ? 'environment' : 'user';
     startCamera();
   });
-  els.caption.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.caption.blur(); });
+  els.caption.addEventListener('input', () => limitLines(els.caption));
+
+  // ---------- 설정 (길이 / 시각 방향) ----------
+
+  function paintSeg(seg, value) {
+    seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.value === value)));
+  }
+
+  function setSegDisabled(disabled) {
+    els.secondsSeg.querySelectorAll('button').forEach((b) => { b.disabled = disabled; });
+  }
+
+  els.secondsSeg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || state.recording) return;
+    state.prefs = Clips.normalizePrefs({ ...state.prefs, seconds: Number(b.dataset.value) });
+    savePrefs();
+    render();
+  });
+
+  els.stampSeg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    state.prefs = Clips.normalizePrefs({ ...state.prefs, stampDir: b.dataset.value });
+    savePrefs();
+    render();
+  });
 
   // 백그라운드로 가면 카메라를 끄고, 돌아오면 다시 켠다 (배터리·다른 앱 카메라 점유 방지)
   document.addEventListener('visibilitychange', () => {

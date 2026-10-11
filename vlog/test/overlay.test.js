@@ -7,6 +7,8 @@ function fakeCtx() {
   const ctx = {
     calls,
     save() {}, restore() {},
+    translate(x, y) { calls.push({ op: 'translate', x, y }); },
+    rotate(a) { calls.push({ op: 'rotate', a }); },
     measureText: (s) => ({ width: Array.from(s).length * 40 }),
     fillText(text, x, y) { calls.push({ op: 'fill', text, x, y, align: this.textAlign, color: this.fillStyle }); },
     strokeText(text, x, y) { calls.push({ op: 'stroke', text, x, y }); },
@@ -34,4 +36,28 @@ test('draws nothing for empty options', () => {
   const ctx = fakeCtx();
   O.drawOverlay(ctx, 720, 1280, { stamp: '', text: '' });
   assert.equal(ctx.calls.length, 0);
+});
+
+test('caption with a line break draws two centered lines', () => {
+  const ctx = fakeCtx();
+  O.drawOverlay(ctx, 720, 1280, { text: '첫 줄\n둘째 줄' });
+  const lines = ctx.calls.filter((c) => c.op === 'fill').map((c) => c.text);
+  assert.deepEqual(lines, ['첫 줄', '둘째 줄']);
+});
+
+test('vertical stamp is rotated up along the right edge', () => {
+  const ctx = fakeCtx();
+  O.drawOverlay(ctx, 720, 1280, { stamp: '2026.10.11 14:32', stampDir: 'vertical' });
+  const t = ctx.calls.find((c) => c.op === 'translate');
+  const r = ctx.calls.find((c) => c.op === 'rotate');
+  const f = ctx.calls.find((c) => c.op === 'fill');
+  assert.ok(t.x > 600 && t.y > 1200);
+  assert.equal(r.a, -Math.PI / 2);
+  assert.deepEqual([f.x, f.y, f.align], [0, 0, 'left']);
+});
+
+test('horizontal stamp is not rotated', () => {
+  const ctx = fakeCtx();
+  O.drawOverlay(ctx, 720, 1280, { stamp: 'x', stampDir: 'horizontal' });
+  assert.equal(ctx.calls.some((c) => c.op === 'rotate'), false);
 });

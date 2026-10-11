@@ -12,7 +12,10 @@
   const STAMP_FONT = 'ui-monospace, Menlo, Consolas, "Courier New", monospace';
   const STAMP_COLOR = '#ffb547';
 
-  /** o = { stamp: '2026.10.11 14:32', text: '가운데 문구' } — 둘 다 생략 가능 */
+  /**
+   * o = { stamp: '2026.10.11 14:32', text: '가운데 문구', stampDir: 'horizontal' | 'vertical' }
+   * stamp/text는 생략 가능. 세로 시각은 오른쪽 아래에서 위로 읽히게 오른쪽 가장자리를 따라 세운다.
+   */
   function drawOverlay(ctx, w, h, o) {
     const m = Layout.overlayMetrics(w, h);
     ctx.save();
@@ -45,7 +48,15 @@
       ctx.shadowColor = 'rgba(255, 120, 20, 0.75)';
       ctx.shadowBlur = m.stampSize * 0.4;
       ctx.fillStyle = STAMP_COLOR;
-      ctx.fillText(o.stamp, w - m.margin, h - m.margin);
+      if (o.stampDir === 'vertical') {
+        // -90° 회전: 글자 진행 방향이 위쪽, 글자 몸통은 기준선 왼쪽(화면 안쪽)에 놓인다
+        ctx.translate(w - m.margin, h - m.margin);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'left';
+        ctx.fillText(o.stamp, 0, 0);
+      } else {
+        ctx.fillText(o.stamp, w - m.margin, h - m.margin);
+      }
     }
 
     ctx.restore();

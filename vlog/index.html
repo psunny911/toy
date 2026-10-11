@@ -8,15 +8,15 @@
   content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none';"
 />
 <meta name="theme-color" content="#111317" />
-<meta name="description" content="5초씩 찍어서 이어 붙이는 브이로그. 촬영시각과 가운데 문구가 영상에 찍힌다." />
-<title>5초 브이로그</title>
+<meta name="description" content="3초·5초씩 찍어서 이어 붙이는 브이로그. 촬영시각과 가운데 문구가 영상에 찍힌다." />
+<title>3·5초 브이로그</title>
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="css/style.css?v=1" />
+<link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 <body>
 <div id="app">
   <header class="topbar">
-    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>5초 브이로그</h1>
+    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>3·5초 브이로그</h1>
     <button type="button" class="text-btn" id="clear-btn" hidden>모두 지우기</button>
   </header>
 
@@ -32,12 +32,25 @@
 
   <label class="caption-field">
     <span class="sr-only">가운데에 넣을 문구</span>
-    <input type="text" id="caption" maxlength="40" placeholder="가운데에 넣을 문구 (선택)" autocomplete="off" enterkeyhint="done" />
+    <textarea id="caption" rows="2" maxlength="60" placeholder="가운데에 넣을 문구 (선택, 줄바꿈 가능)" autocomplete="off"></textarea>
   </label>
 
+  <div class="options">
+    <div class="segmented" role="radiogroup" aria-label="클립 길이" id="seconds-seg">
+      <span class="seg-label" aria-hidden="true">길이</span>
+      <button type="button" role="radio" data-value="3">3초</button>
+      <button type="button" role="radio" data-value="5">5초</button>
+    </div>
+    <div class="segmented" role="radiogroup" aria-label="촬영시각 방향" id="stamp-seg">
+      <span class="seg-label" aria-hidden="true">시각</span>
+      <button type="button" role="radio" data-value="horizontal">가로</button>
+      <button type="button" role="radio" data-value="vertical">세로</button>
+    </div>
+  </div>
+
   <div class="controls">
-    <div class="ctrl-side"><span id="next-hint" class="hint">5초씩 녹화돼요</span></div>
-    <button type="button" class="rec-btn" id="rec-btn" aria-label="5초 녹화" disabled>
+    <div class="ctrl-side"><span id="next-hint" class="hint"></span></div>
+    <button type="button" class="rec-btn" id="rec-btn" aria-label="녹화" disabled>
       <svg viewBox="0 0 80 80" aria-hidden="true">
         <circle class="ring-bg" cx="40" cy="40" r="36" />
         <circle class="ring-fg" id="rec-ring" cx="40" cy="40" r="36" />
@@ -57,7 +70,7 @@
       <span class="muted" id="clip-total">0:00</span>
     </div>
     <ol class="clip-list" id="clip-list"></ol>
-    <p class="empty" id="clip-empty">녹화한 클립이 여기에 순서대로 쌓여요.<br />누르면 문구 수정·순서 변경·삭제를 할 수 있어요.</p>
+    <p class="empty" id="clip-empty">녹화한 클립이 여기에 순서대로 쌓여요.<br />누르면 문구 수정·순서 변경·개별 저장·삭제를 할 수 있어요.</p>
   </section>
 
   <footer class="bottombar">
@@ -77,11 +90,12 @@
     </div>
     <label class="caption-field">
       <span class="field-label">가운데 문구</span>
-      <input type="text" id="clip-caption" maxlength="40" placeholder="비워두면 문구 없음" autocomplete="off" enterkeyhint="done" />
+      <textarea id="clip-caption" rows="2" maxlength="60" placeholder="비워두면 문구 없음 (줄바꿈 가능)" autocomplete="off"></textarea>
     </label>
     <div class="sheet-actions">
       <button type="button" class="pill" id="clip-left">◀ 앞으로</button>
       <button type="button" class="pill" id="clip-right">뒤로 ▶</button>
+      <button type="button" class="pill" id="clip-save">이 클립 저장</button>
       <button type="button" class="pill danger" id="clip-delete">삭제</button>
     </div>
   </div>
@@ -100,21 +114,22 @@
     <div id="render-result" hidden>
       <div class="player" id="result-player"><video id="result-video" playsinline controls></video></div>
       <div class="sheet-actions">
-        <a class="primary-btn" id="save-btn" download>저장</a>
+        <button type="button" class="primary-btn" id="save-btn">갤러리에 저장</button>
         <button type="button" class="pill" id="share-btn" hidden>공유</button>
       </div>
+      <p class="muted small" id="save-hint"></p>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="js/format.js?v=1"></script>
-<script src="js/layout.js?v=1"></script>
-<script src="js/clips.js?v=1"></script>
-<script src="js/overlay.js?v=1"></script>
-<script src="js/db.js?v=1"></script>
-<script src="js/merge.js?v=1"></script>
-<script src="js/app.js?v=1"></script>
+<script src="js/format.js?v=2"></script>
+<script src="js/layout.js?v=2"></script>
+<script src="js/clips.js?v=2"></script>
+<script src="js/overlay.js?v=2"></script>
+<script src="js/db.js?v=2"></script>
+<script src="js/merge.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
 </body>
 </html>

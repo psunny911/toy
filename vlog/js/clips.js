@@ -8,8 +8,11 @@
     root.Clips = api;
   }
 })(typeof self !== 'undefined' ? self : this, function () {
-  const CLIP_SECONDS = 5;
-  const MAX_TEXT = 40;
+  const DURATIONS = [3, 5];
+  const DEFAULT_SECONDS = 5;
+  const STAMP_DIRS = ['horizontal', 'vertical'];
+  const MAX_TEXT = 60;
+  const MAX_LINES = 3;
 
   // mp4를 먼저 시도: iOS Safari는 mp4만, 최신 Chrome은 둘 다 된다.
   // mp4는 길이 정보가 들어가서 다른 앱에서 탐색(seek)이 잘 된다.
@@ -63,8 +66,24 @@
     return renumber(next);
   }
 
+  /** 줄바꿈은 살리고(최대 MAX_LINES줄, 빈 줄 제거) 줄 안의 연속 공백은 하나로. */
   function cleanText(text) {
-    return Array.from(String(text || '').replace(/\s+/g, ' ').trim()).slice(0, MAX_TEXT).join('');
+    const lines = String(text || '')
+      .replace(/\r\n?/g, '\n')
+      .split('\n')
+      .map((l) => l.replace(/[^\S\n]+/g, ' ').trim())
+      .filter(Boolean)
+      .slice(0, MAX_LINES);
+    return Array.from(lines.join('\n')).slice(0, MAX_TEXT).join('').trim();
+  }
+
+  /** 저장된 설정값 검증: 허용 목록에 없으면 기본값. */
+  function normalizePrefs(p) {
+    const prefs = p && typeof p === 'object' ? p : {};
+    return {
+      seconds: DURATIONS.includes(prefs.seconds) ? prefs.seconds : DEFAULT_SECONDS,
+      stampDir: STAMP_DIRS.includes(prefs.stampDir) ? prefs.stampDir : STAMP_DIRS[0],
+    };
   }
 
   function setText(list, id, text) {
@@ -77,7 +96,8 @@
   }
 
   return {
-    CLIP_SECONDS, MAX_TEXT, MIME_CANDIDATES,
-    pickMimeType, extForMime, sortClips, renumber, addClip, removeClip, moveClip, cleanText, setText, totalDuration,
+    DURATIONS, DEFAULT_SECONDS, STAMP_DIRS, MAX_TEXT, MAX_LINES, MIME_CANDIDATES,
+    pickMimeType, extForMime, sortClips, renumber, addClip, removeClip, moveClip, cleanText, normalizePrefs, setText,
+    totalDuration,
   };
 });

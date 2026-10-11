@@ -35,7 +35,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -207,8 +208,11 @@ button:disabled {
   color: var(--muted);
 }
 
-.caption-field input {
+.caption-field textarea {
+  display: block;
   width: 100%;
+  resize: none;
+  line-height: 1.4;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -216,11 +220,11 @@ button:disabled {
   font-size: 16px; /* iOS 확대 방지 */
 }
 
-.caption-field input::placeholder {
+.caption-field textarea::placeholder {
   color: var(--muted);
 }
 
-.caption-field input:disabled {
+.caption-field textarea:disabled {
   opacity: 0.5;
 }
 
@@ -277,6 +281,47 @@ button:disabled {
   font-size: 16px;
   font-weight: 800;
   text-decoration: none;
+}
+
+/* ---------- 설정 토글 ---------- */
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.seg-label {
+  padding: 0 8px 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.segmented button {
+  min-width: 52px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.segmented button[aria-checked="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 /* ---------- 녹화 컨트롤 ---------- */
@@ -430,6 +475,7 @@ button:disabled {
   font-weight: 800;
   text-align: center;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  white-space: pre-line;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -530,6 +576,15 @@ button:disabled {
   height: 100%;
   background: var(--accent);
   transition: width 0.2s linear;
+}
+
+.small {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#save-hint {
+  margin: 10px 0 0;
 }
 
 #progress-text {

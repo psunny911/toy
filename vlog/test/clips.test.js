@@ -40,10 +40,24 @@ test('moveClip swaps neighbours and ignores out of range', () => {
   assert.equal(C.moveClip(list, 'zz', 1), list);
 });
 
+test('cleanText keeps line breaks, drops blank lines, caps line count', () => {
+  assert.equal(C.cleanText('  카페   도착  '), '카페 도착');
+  assert.equal(C.cleanText('카페\r\n\n  도착 \n'), '카페\n도착');
+  assert.equal(C.cleanText('1\n2\n3\n4'), '1\n2\n3');
+  assert.equal(C.cleanText(''), '');
+});
+
+test('normalizePrefs falls back to defaults', () => {
+  assert.deepEqual(C.normalizePrefs(null), { seconds: 5, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs({ seconds: 3, stampDir: 'vertical' }), { seconds: 3, stampDir: 'vertical' });
+  assert.deepEqual(C.normalizePrefs({ seconds: 4, stampDir: 'diagonal' }), { seconds: 5, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs({ seconds: '3' }), { seconds: 5, stampDir: 'horizontal' });
+});
+
 test('setText cleans whitespace, caps length, keeps identity when unchanged', () => {
   const list = [mk('a', 0, { text: '안녕' }), mk('b', 1)];
-  const next = C.setText(list, 'b', '  카페\n도착   ');
-  assert.equal(next[1].text, '카페 도착');
+  const next = C.setText(list, 'b', '  카페   도착\n\n 맛있다 ');
+  assert.equal(next[1].text, '카페 도착\n맛있다');
   assert.equal(next[0], list[0]);
   assert.equal(C.setText(list, 'a', ' 안녕 ')[0], list[0]);
   assert.equal(Array.from(C.setText(list, 'a', '가'.repeat(100))[0].text).length, C.MAX_TEXT);

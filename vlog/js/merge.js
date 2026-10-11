@@ -19,14 +19,14 @@
     });
   }
 
-  function drawFrame(ctx, W, H, video, clip) {
+  function drawFrame(ctx, W, H, video, clip, stampDir) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
     if (video.videoWidth) {
       const r = Layout.containRect(video.videoWidth, video.videoHeight, W, H);
       ctx.drawImage(video, r.x, r.y, r.width, r.height);
     }
-    Overlay.drawOverlay(ctx, W, H, { stamp: Format.formatStamp(clip.recordedAt), text: clip.text });
+    Overlay.drawOverlay(ctx, W, H, { stamp: Format.formatStamp(clip.recordedAt), text: clip.text, stampDir });
   }
 
   /** 끝날 때까지 프레임을 그린다. ended가 안 오는 브라우저를 위해 시간 기준 안전장치도 둔다. */
@@ -53,10 +53,11 @@
   }
 
   /**
-   * clips: 정렬된 클립 배열, mimeType: 결과 포맷, onProgress(0..1)
+   * clips: 정렬된 클립 배열 (1개면 그 클립만 오버레이를 입혀 내보낸다)
+   * mimeType: 결과 포맷, stampDir: 'horizontal' | 'vertical', onProgress(0..1)
    * → Promise<Blob>
    */
-  async function renderVlog(clips, { mimeType, onProgress }) {
+  async function renderVlog(clips, { mimeType, stampDir, onProgress }) {
     const first = clips[0];
     const { width: W, height: H } = Layout.outputSize(first.width || 720, first.height || 1280, MAX_LONG_SIDE);
     const canvas = document.createElement('canvas');
@@ -98,12 +99,12 @@
           // 오디오 그래프로 보낸 소리는 스피커로 나가지 않는다 (녹화에만 들어감)
           const source = audio.createMediaElementSource(video);
           source.connect(dest);
-          drawFrame(ctx, W, H, video, clip);
+          drawFrame(ctx, W, H, video, clip, stampDir);
           if (recorder.state === 'inactive') recorder.start(1000);
           else recorder.resume();
           await playThrough(
             video, clip,
-            () => drawFrame(ctx, W, H, video, clip),
+            () => drawFrame(ctx, W, H, video, clip, stampDir),
             (t) => onProgress && onProgress(Math.min(1, (elapsed + t) / total)),
           );
           recorder.pause();
