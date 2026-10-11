@@ -8,7 +8,7 @@
     root.Clips = api;
   }
 })(typeof self !== 'undefined' ? self : this, function () {
-  const DURATIONS = [1, 3, 5];
+  const DURATIONS = [1, 2, 3, 5];
   const DEFAULT_SECONDS = 3;
   const STAMP_DIRS = ['horizontal', 'vertical'];
   const MAX_TEXT = 60;

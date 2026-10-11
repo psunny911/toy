@@ -51,6 +51,7 @@ test('normalizePrefs falls back to defaults', () => {
   assert.deepEqual(C.normalizePrefs(null), { seconds: 3, stampDir: 'horizontal' });
   assert.deepEqual(C.normalizePrefs({ seconds: 1, stampDir: 'vertical' }), { seconds: 1, stampDir: 'vertical' });
   assert.deepEqual(C.normalizePrefs({ seconds: 5 }), { seconds: 5, stampDir: 'horizontal' });
+  assert.deepEqual(C.normalizePrefs({ seconds: 2 }), { seconds: 2, stampDir: 'horizontal' });
   assert.deepEqual(C.normalizePrefs({ seconds: 4, stampDir: 'diagonal' }), { seconds: 3, stampDir: 'horizontal' });
   assert.deepEqual(C.normalizePrefs({ seconds: '1' }), { seconds: 3, stampDir: 'horizontal' });
 });
