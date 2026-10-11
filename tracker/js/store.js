@@ -2,12 +2,14 @@
 //
 // data = {
 //   version: 1,
-//   trackers: [{ id, name, emoji, color, type: 'check'|'count', goal, step, unit, trackOnly, createdAt }],
+//   trackers: [{ id, name, emoji, color, type: 'check'|'count', goal, step, unit, trackOnly, startDate, createdAt }],
 //   entries: { 'YYYY-MM-DD': { [trackerId]: number } }   // 0인 값은 저장하지 않는다
 // }
 // 'check' 트래커는 goal=1, 값은 0/1. 'count' 트래커는 값이 goal 이상이면 달성.
 // trackOnly 트래커는 목표 없이 기록만 한다 — 달성률 집계에서 빠지고, 값이 있으면 "기록한 날"로 본다.
 // (goal은 지워지지 않고 남아 있어서 나중에 일반 트래커로 되돌리면 그대로 쓴다.)
+// startDate는 트래킹 시작일 — 이 날 이전은 화면에 나오지 않고 달성률에도 들어가지 않는다.
+// 입력하지 않으면 생성일(createdAt). 시작일 이전 기록은 지우지 않고 남겨두지만 집계하지 않는다.
 // 저장 방식(localStorage 등)은 storage.js가 맡는다 — 앱 전환 시 이 파일은 그대로 재사용한다.
 (function (root, factory) {
   const Dates = typeof module !== 'undefined' && module.exports ? require('./dates.js') : root.Dates;
@@ -57,7 +59,7 @@
 
   /**
    * 사용자 입력을 검증·정규화한다. 잘못된 입력이면 Error를 던진다.
-   * id/createdAt은 다루지 않는다 (addTracker/updateTracker가 관리).
+   * id/createdAt/startDate는 다루지 않는다 (addTracker/updateTracker가 관리).
    */
   function normalizeTrackerInput(input) {
     const name = String(input.name || '').trim().slice(0, MAX_NAME_LENGTH);
@@ -85,10 +87,14 @@
     return data.trackers.find((t) => t.id === id) || null;
   }
 
-  /** @param {{ id: string, today: string }} meta - 순수성을 위해 id/날짜는 호출자가 넘긴다. */
+  /**
+   * @param {{ id: string, today: string }} meta - 순수성을 위해 id/날짜는 호출자가 넘긴다.
+   * input.startDate가 비었거나 잘못된 값이면 생성일(meta.today)부터 시작한다.
+   */
   function addTracker(data, input, meta) {
     if (findTracker(data, meta.id)) throw new Error(`Duplicate tracker id: ${meta.id}`);
-    const tracker = { id: meta.id, ...normalizeTrackerInput(input), createdAt: meta.today };
+    const startDate = Dates.isValidKey(input.startDate) ? input.startDate : meta.today;
+    const tracker = { id: meta.id, ...normalizeTrackerInput(input), startDate, createdAt: meta.today };
     return { ...data, trackers: [...data.trackers, tracker] };
   }
 
@@ -100,6 +106,9 @@
     const prev = findTracker(data, id);
     if (!prev) return data;
     const next = { ...prev, ...normalizeTrackerInput({ ...prev, ...input }) };
+    // startDate: 유효한 날짜면 그 날, 빈 값('')이면 생성일로 되돌림, 지정 안 하면(undefined) 유지
+    if (Dates.isValidKey(input.startDate)) next.startDate = input.startDate;
+    else if (input.startDate === '' || input.startDate === null) next.startDate = prev.createdAt;
     const trackers = data.trackers.map((t) => (t.id === id ? next : t));
     let entries = data.entries;
     if (prev.type !== next.type) {
@@ -196,9 +205,11 @@
       }
       ids.add(t.id);
       const createdAt = Dates.isValidKey(t.createdAt) ? t.createdAt : Dates.todayKey();
-      trackers.push({ id: t.id, ...normalized, createdAt });
+      const startDate = Dates.isValidKey(t.startDate) ? t.startDate : null;
+      trackers.push({ id: t.id, ...normalized, startDate, createdAt });
     }
     const byId = new Map(trackers.map((t) => [t.id, t]));
+    const earliest = new Map();
     const entries = {};
     for (const [key, day] of Object.entries(raw.entries || {})) {
       if (!Dates.isValidKey(key) || !day || typeof day !== 'object') continue;
@@ -208,8 +219,15 @@
         const n = Math.round(Number(value));
         if (!tracker || !Number.isFinite(n) || n <= 0) continue;
         clean[id] = tracker.type === 'check' ? 1 : Math.min(n, MAX_VALUE);
+        if (!earliest.has(id) || key < earliest.get(id)) earliest.set(id, key);
       }
       if (Object.keys(clean).length) entries[key] = clean;
+    }
+    // startDate가 없는 예전 데이터: 생성일과 가장 이른 기록 중 빠른 날 (예전 집계 방식과 같은 결과)
+    for (const t of trackers) {
+      if (t.startDate) continue;
+      const first = earliest.get(t.id);
+      t.startDate = first && first < t.createdAt ? first : t.createdAt;
     }
     return { version: DATA_VERSION, trackers, entries };
   }

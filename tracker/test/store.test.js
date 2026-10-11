@@ -14,7 +14,7 @@ function withTrackers() {
 test('addTracker normalizes input and rejects empty names', () => {
   const data = withTrackers();
   assert.deepEqual(data.trackers[0], {
-    id: 'pill', name: '영양제', emoji: '✅', color: '#F6C1CC', type: 'check', goal: 1, step: 1, unit: '', trackOnly: false, createdAt: TODAY,
+    id: 'pill', name: '영양제', emoji: '✅', color: '#F6C1CC', type: 'check', goal: 1, step: 1, unit: '', trackOnly: false, startDate: TODAY, createdAt: TODAY,
   });
   assert.equal(data.trackers[1].goal, 30);
   assert.throws(() => S.addTracker(data, { name: '  ' }, { id: 'x', today: TODAY }));
@@ -122,4 +122,31 @@ test('sanitizeData keeps trackOnly from backups and defaults old backups to fals
     entries: {},
   });
   assert.deepEqual(data.trackers.map((t) => t.trackOnly), [true, false]);
+});
+
+test('startDate defaults to the creation day and can be set, kept, or reset', () => {
+  let data = S.addTracker(S.createEmptyData(), { name: 'a' }, { id: 'a', today: TODAY });
+  assert.equal(data.trackers[0].startDate, TODAY);
+  data = S.addTracker(data, { name: 'b', startDate: '2026-10-01' }, { id: 'b', today: TODAY });
+  assert.equal(data.trackers[1].startDate, '2026-10-01');
+  data = S.addTracker(data, { name: 'c', startDate: '2026-13-01' }, { id: 'c', today: TODAY });
+  assert.equal(data.trackers[2].startDate, TODAY);
+  data = S.updateTracker(data, 'b', { name: 'b2' });
+  assert.equal(S.findTracker(data, 'b').startDate, '2026-10-01');
+  data = S.updateTracker(data, 'b', { startDate: '2026-10-05' });
+  assert.equal(S.findTracker(data, 'b').startDate, '2026-10-05');
+  data = S.updateTracker(data, 'b', { startDate: '' });
+  assert.equal(S.findTracker(data, 'b').startDate, TODAY);
+});
+
+test('old backups without startDate start at the earlier of creation and first record', () => {
+  const data = S.sanitizeData({
+    trackers: [
+      { id: 'a', name: 'A', createdAt: '2026-10-05' },
+      { id: 'b', name: 'B', createdAt: '2026-10-05' },
+      { id: 'c', name: 'C', createdAt: '2026-10-05', startDate: '2026-10-08' },
+    ],
+    entries: { '2026-10-01': { a: 1 }, '2026-10-07': { b: 1 } },
+  });
+  assert.deepEqual(data.trackers.map((t) => t.startDate), ['2026-10-01', '2026-10-05', '2026-10-08']);
 });

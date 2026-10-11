@@ -23,7 +23,7 @@ test('currentStreak counts back from yesterday when today is not done yet', () =
 
 test('longestStreak finds the best run', () => {
   let data = setup();
-  for (const k of ['2026-10-01', '2026-10-02', '2026-10-04', '2026-10-05', '2026-10-06']) {
+  for (const k of ['2026-10-05', '2026-10-06', '2026-10-08', '2026-10-09', '2026-10-10']) {
     data = S.toggleCheck(data, k, 'pill');
   }
   assert.equal(St.longestStreak(data, S.findTracker(data, 'pill'), TODAY), 3);
@@ -48,10 +48,30 @@ test('dayCompletion only counts trackers that had started', () => {
   assert.equal(today.ratio, 0.25);
 });
 
-test('backdated records move the start date earlier', () => {
+test('a later start date keeps a new habit out of earlier days', () => {
   let data = setup();
-  data = S.setValue(data, '2026-10-01', 'run', 30);
-  assert.equal(St.startKey(data, S.findTracker(data, 'run')), '2026-10-01');
+  data = S.addTracker(data, { name: 'new', type: 'check', startDate: '2026-10-10' }, { id: 'new', today: TODAY });
+  assert.equal(St.dayCompletion(data, '2026-10-09').total, 1);
+  assert.equal(St.dayCompletion(data, '2026-10-10').total, 2);
+  assert.deepEqual(St.trackersShownOn(data, '2026-10-09').map((t) => t.id), ['pill']);
+});
+
+test('records before the start date are kept but not counted', () => {
+  let data = setup();
+  data = S.toggleCheck(data, '2026-10-03', 'pill');
+  data = S.toggleCheck(data, '2026-10-04', 'pill');
+  data = S.toggleCheck(data, '2026-10-05', 'pill');
+  const pill = S.findTracker(data, 'pill');
+  assert.equal(St.isDoneOn(data, pill, '2026-10-04'), false);
+  assert.equal(St.longestStreak(data, pill, TODAY), 1);
+  assert.equal(St.rangeStats(data, pill, '2026-10-01', '2026-10-05', TODAY).eligibleDays, 1);
+  assert.equal(S.getValue(data, '2026-10-04', 'pill'), 1);
+});
+
+test('streak stops at the start date', () => {
+  let data = setup();
+  for (const k of ['2026-10-04', '2026-10-05', '2026-10-06']) data = S.toggleCheck(data, k, 'pill');
+  assert.equal(St.currentStreak(data, S.findTracker(data, 'pill'), '2026-10-06'), 2);
 });
 
 test('rangeStats excludes days before start and after today', () => {

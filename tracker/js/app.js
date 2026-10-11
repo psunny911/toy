@@ -56,6 +56,12 @@
     return `${v}${t.unit}`;
   }
 
+  /** '2026-10-05' → '10월 5일' */
+  function shortDate(key) {
+    const d = D.fromKey(key);
+    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  }
+
   function percent(r) {
     return `${Math.round(r * 100)}%`;
   }
@@ -203,8 +209,14 @@
         : key === today ? (comp.done ? '좋아요, 계속 가볼까요?' : '오늘도 한 걸음씩 시작해요')
           : '지난 기록도 수정할 수 있어요';
 
-    const goals = data.trackers.filter((t) => !t.trackOnly);
-    const logs = data.trackers.filter((t) => t.trackOnly);
+    const shown = St.trackersShownOn(data, key);
+    const goals = shown.filter((t) => !t.trackOnly);
+    const logs = shown.filter((t) => t.trackOnly);
+    if (!shown.length) {
+      return h('section', { className: 'card empty' },
+        h('div', { className: 'empty-emoji', text: '🗓️' }),
+        h('p', { className: 'muted', text: '이 날짜에는 아직 시작한 트래커가 없어요.' }));
+    }
 
     const summary = goals.length
       ? h('section', { className: 'card summary' },
@@ -336,8 +348,13 @@
 
       days.forEach((k) => {
         const v = S.getValue(data, k, t.id);
-        const done = St.isDone(t, v);
+        const before = !St.isTrackedOn(t, k);
+        const done = !before && St.isDone(t, v);
         const future = k > today;
+        if (before) {
+          grid.append(h('div', { className: 'wcell before', attrs: { 'aria-label': `${D.formatDay(k)} ${t.name} 시작 전` } }));
+          return;
+        }
         // 기록 전용 수치형은 체크 대신 기록한 값을 보여준다
         const showValue = t.trackOnly && t.type === 'count' && v > 0;
         grid.append(h('button', {
@@ -400,7 +417,10 @@
       let label = '';
       let done = false;
       let mark = '✓';
-      if (tracker) {
+      const before = tracker && !St.isTrackedOn(tracker, k);
+      if (before) {
+        label = '시작 전';
+      } else if (tracker) {
         const v = S.getValue(data, k, tracker.id);
         p = St.progress(tracker, v);
         done = St.isDone(tracker, v);
@@ -413,8 +433,8 @@
         label = `${comp.done}/${comp.total} 완료`;
       }
       cal.append(h('button', {
-        className: 'mcell' + (cell.inMonth ? '' : ' out') + (future ? ' future' : '') + (k === today ? ' today' : '') + (done ? ' done' : ''),
-        attrs: { type: 'button', disabled: future, 'aria-label': `${D.formatDay(k)} ${label}` },
+        className: 'mcell' + (cell.inMonth ? '' : ' out') + (future ? ' future' : '') + (before ? ' before' : '') + (k === today ? ' today' : '') + (done ? ' done' : ''),
+        attrs: { type: 'button', disabled: future || before, 'aria-label': `${D.formatDay(k)} ${label}` },
         vars: { '--c': tracker ? tracker.color : PRIMARY, '--p': future ? 0 : p },
         onClick: () => setState({ view: 'day', cursor: k }),
       }, h('span', { className: 'mcell-num', text: String(D.fromKey(k).getDate()) }), done ? h('span', { className: 'mcell-mark', text: mark }) : null));
@@ -426,6 +446,11 @@
 
   function statTile(value, label) {
     return h('div', { className: 'stat' }, h('div', { className: 'stat-value', text: value }), h('div', { className: 'stat-label', text: label }));
+  }
+
+  function startHint(t, today) {
+    const start = St.startKey(t);
+    return h('p', { className: 'hint', text: start > today ? `${shortDate(start)}부터 시작해요.` : `${shortDate(start)}부터 기록 중이에요.` });
   }
 
   function trackerMonthStats(t, first, last, today) {
@@ -440,6 +465,7 @@
     if (t.type === 'count') tiles.push(statTile(formatValue(t, s.total), '이번 달 합계'));
     return h('section', { className: 'card', vars: trackerVars(t) },
       h('h3', { className: 'card-title', text: `${t.emoji} ${t.name}` }),
+      startHint(t, today),
       h('div', { className: 'stats-grid' }, tiles));
   }
 
@@ -455,7 +481,7 @@
     }
     return h('section', { className: 'card', vars: trackerVars(t) },
       h('h3', { className: 'card-title', text: `${t.emoji} ${t.name}` }),
-      h('p', { className: 'hint', text: '기록만 하는 항목이라 달성률은 집계하지 않아요.' }),
+      h('p', { className: 'hint', text: `기록만 하는 항목이라 달성률은 집계하지 않아요. ${St.startKey(t) > today ? `${shortDate(St.startKey(t))}부터 시작해요.` : `${shortDate(St.startKey(t))}부터 기록 중이에요.`}` }),
       h('div', { className: 'stats-grid' }, tiles));
   }
 
@@ -470,7 +496,9 @@
     }
     const rows = St.goalTrackers(data).map((t) => ({ t, s: St.rangeStats(data, t, first, last, today) }));
     const logRows = data.trackers.filter((t) => t.trackOnly).map((t) => ({ t, s: St.rangeStats(data, t, first, last, today) }));
-    const avg = rows.length ? rows.reduce((a, r) => a + r.s.rate, 0) / rows.length : 0;
+    // 이번 달에 아직 시작하지 않은 트래커는 평균에서 뺀다
+    const counted = rows.filter((r) => r.s.eligibleDays > 0);
+    const avg = counted.length ? counted.reduce((a, r) => a + r.s.rate, 0) / counted.length : 0;
 
     return h('section', { className: 'card' },
       h('div', { className: 'stats-grid' },
@@ -481,7 +509,7 @@
         h('li', { vars: trackerVars(t) },
           h('span', { className: 'rl-name', text: `${t.emoji} ${t.name}` }),
           h('div', { className: 'bar' }, h('div', { className: 'bar-fill', vars: { '--p': s.rate } })),
-          h('span', { className: 'rl-value', text: `${s.doneDays}/${s.eligibleDays}` })))),
+          h('span', { className: 'rl-value', text: s.eligibleDays ? `${s.doneDays}/${s.eligibleDays}` : '시작 전' })))),
       logRows.length ? h('h3', { className: 'card-subtitle', text: '기록만 하는 항목' }) : null,
       logRows.length ? h('ul', { className: 'log-list' }, logRows.map(({ t, s }) =>
         h('li', { vars: trackerVars(t) },
@@ -506,6 +534,8 @@
   const stepInput = document.getElementById('f-step');
   const trackOnlyInput = document.getElementById('f-track-only');
   const goalField = document.getElementById('goal-field');
+  const startInput = document.getElementById('f-start');
+  const startHintEl = document.getElementById('start-hint');
   const editorError = document.getElementById('editor-error');
   const deleteBtn = document.getElementById('delete-btn');
   let editingId = null;
@@ -554,6 +584,9 @@
     deleteBtn.hidden = !t;
     editorError.textContent = '';
     fillForm(t || { emoji: '✨', name: '', color: PRIMARY, type: 'check' });
+    // 시작일은 프리셋 선택(fillForm)과 무관하게 열 때 한 번만 채운다
+    startInput.value = t ? St.startKey(t) : '';
+    startHintEl.textContent = `비워두면 만든 날(${shortDate(t ? t.createdAt : D.todayKey())})부터 시작해요. 시작일 이전 날짜는 화면과 달성률에 들어가지 않아요.`;
     editor.showModal();
     if (!t) nameInput.focus();
   }
@@ -568,6 +601,7 @@
       unit: unitInput.value,
       step: stepInput.value,
       trackOnly: trackOnlyInput.checked,
+      startDate: startInput.value,
     };
   }
 
@@ -581,8 +615,10 @@
         commit(S.updateTracker(data, editingId, S.normalizeTrackerInput(input)));
         toast('저장했어요');
       } else {
-        commit(S.addTracker(data, input, { id: newId(), today: D.todayKey() }));
-        toast(`${input.name.trim()} 트래커를 추가했어요`);
+        const today = D.todayKey();
+        commit(S.addTracker(data, input, { id: newId(), today }));
+        const start = D.isValidKey(input.startDate) ? input.startDate : today;
+        toast(start > today ? `${input.name.trim()} 트래커는 ${shortDate(start)}부터 보여요` : `${input.name.trim()} 트래커를 추가했어요`);
       }
       editor.close();
       renderManageList();
@@ -623,7 +659,7 @@
     manageList.replaceChildren(...data.trackers.map((t, i) => h('li', { vars: trackerVars(t) },
       h('span', { className: 'ml-icon', text: t.emoji }),
       h('span', { className: 'ml-name', text: t.name }),
-      h('span', { className: 'ml-goal muted', text: t.trackOnly ? '기록만' : t.type === 'count' ? `${formatValue(t, t.goal)}/일` : '체크' }),
+      h('span', { className: 'ml-goal muted', text: `${t.trackOnly ? '기록만' : t.type === 'count' ? `${formatValue(t, t.goal)}/일` : '체크'} · ${shortDate(St.startKey(t))}~` }),
       h('button', {
         className: 'icon-btn small', attrs: { type: 'button', 'aria-label': `${t.name} 위로`, disabled: i === 0 },
         text: '↑', onClick: () => { commit(S.moveTracker(data, t.id, -1)); renderManageList(); },

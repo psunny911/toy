@@ -1,6 +1,6 @@
 // 달성/연속 기록/달성률 계산 (순수 함수, UMD).
-// 트래커의 "시작일"은 생성일과 가장 이른 기록 중 빠른 날이다 — 과거 날짜에 소급 기록해도
-// 통계에 반영되도록. 시작일 이전과 오늘 이후 날짜는 달성률 분모에서 제외한다.
+// 트래커의 시작일(startDate, 없으면 생성일) 이전과 오늘 이후 날짜는 집계하지 않는다.
+// 그래서 새로 추가한 습관이 과거의 달성률을 끌어내리지 않는다.
 (function (root, factory) {
   const isNode = typeof module !== 'undefined' && module.exports;
   const Dates = isNode ? require('./dates.js') : root.Dates;
@@ -30,21 +30,28 @@
     return data.trackers.filter((t) => !t.trackOnly);
   }
 
+  /** 시작일 이전 기록은 남아 있어도 달성으로 치지 않는다. */
   function isDoneOn(data, tracker, key) {
-    return isDone(tracker, getValue(data, key, tracker.id));
+    return isTrackedOn(tracker, key) && isDone(tracker, getValue(data, key, tracker.id));
   }
 
-  function startKey(data, tracker) {
-    let start = tracker.createdAt;
-    for (const [key, day] of Object.entries(data.entries)) {
-      if (key < start && day[tracker.id] > 0) start = key;
-    }
-    return start;
+  function startKey(tracker) {
+    return tracker.startDate || tracker.createdAt;
+  }
+
+  /** 해당 날짜가 트래킹 기간(시작일 이후)인지. */
+  function isTrackedOn(tracker, key) {
+    return key >= startKey(tracker);
+  }
+
+  /** 해당 날짜에 화면에 보여줄 트래커 (시작일 이후, 기록 전용 포함). */
+  function trackersShownOn(data, key) {
+    return data.trackers.filter((t) => isTrackedOn(t, key));
   }
 
   /** 해당 날짜에 달성률 집계 대상인 트래커 (시작일 이후, 기록 전용 제외). */
   function trackersActiveOn(data, key) {
-    return goalTrackers(data).filter((t) => startKey(data, t) <= key);
+    return goalTrackers(data).filter((t) => isTrackedOn(t, key));
   }
 
   /**
@@ -97,7 +104,7 @@
    *   total은 count 트래커의 기간 합계 (check는 doneDays와 같다).
    */
   function rangeStats(data, tracker, from, to, today) {
-    const start = startKey(data, tracker);
+    const start = startKey(tracker);
     const lo = from > start ? from : start;
     const hi = to < today ? to : today;
     let doneDays = 0;
@@ -120,6 +127,8 @@
     isDoneOn,
     goalTrackers,
     startKey,
+    isTrackedOn,
+    trackersShownOn,
     trackersActiveOn,
     dayCompletion,
     currentStreak,

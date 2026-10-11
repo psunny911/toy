@@ -1198,3 +1198,40 @@ button:disabled {
   font-size: 0.78rem;
   color: var(--muted);
 }
+
+/* ---------- 시작일 ---------- */
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.field input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* 시작일 이전 칸: 빈 자리만 표시 */
+.wcell.before,
+.mcell.before {
+  background: transparent;
+  box-shadow: none;
+  color: var(--line);
+}
+
+.wcell.before::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.mcell.before {
+  color: var(--muted);
+  opacity: 0.45;
+}
