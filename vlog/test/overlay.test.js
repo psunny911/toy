@@ -16,7 +16,7 @@ function fakeCtx() {
   return ctx;
 }
 
-test('draws centered caption lines and a bottom-right stamp', () => {
+test('draws centered caption lines and a bottom-left stamp', () => {
   const ctx = fakeCtx();
   O.drawOverlay(ctx, 720, 1280, { stamp: '2026.10.11 14:32', text: '오늘의 브이로그' });
   const fills = ctx.calls.filter((c) => c.op === 'fill');
@@ -27,9 +27,9 @@ test('draws centered caption lines and a bottom-right stamp', () => {
   const mid = (caption[0].y + caption[caption.length - 1].y) / 2;
   assert.ok(Math.abs(mid - 640) < 1e-9);
   const stamp = fills.find((c) => c.text === '2026.10.11 14:32');
-  assert.equal(stamp.align, 'right');
+  assert.equal(stamp.align, 'left');
   assert.equal(stamp.color, O.STAMP_COLOR);
-  assert.ok(stamp.x > 600 && stamp.y > 1200);
+  assert.ok(stamp.x < 100 && stamp.y > 1200);
 });
 
 test('draws nothing for empty options', () => {

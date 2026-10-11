@@ -457,7 +457,7 @@ button:disabled {
 
 .clip-time {
   position: absolute;
-  right: 6px;
+  left: 6px;
   bottom: 6px;
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 11px;
