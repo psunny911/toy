@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none';"
+/>
+<meta name="theme-color" content="#A7C7E7" />
+<meta name="description" content="영어 학습, 영양제, 운동 같은 매일의 습관을 기록하는 트래커" />
+<title>데일리 트래커</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/style.css?v=1" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>데일리 트래커</h1>
+    <div class="topbar-actions">
+      <button type="button" class="icon-btn" id="settings-btn" aria-label="설정 및 트래커 관리"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+      <button type="button" class="icon-btn primary" id="add-btn" aria-label="트래커 추가">＋</button>
+    </div>
+  </header>
+
+  <div class="period-nav">
+    <button type="button" class="nav-arrow" id="prev-btn" aria-label="이전">‹</button>
+    <div class="period-label">
+      <span id="period-text"></span>
+      <button type="button" class="today-chip" id="today-btn" hidden>오늘</button>
+    </div>
+    <button type="button" class="nav-arrow" id="next-btn" aria-label="다음">›</button>
+  </div>
+
+  <main id="view" aria-live="polite"></main>
+
+  <nav class="tabbar" role="tablist" aria-label="보기 전환">
+    <button type="button" role="tab" class="tab" data-view="day"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 10"/></svg>일간</button>
+    <button type="button" role="tab" class="tab" data-view="week"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V11M8 18V7M12 18v-5M16 18V9M20 18V5"/></svg>주간</button>
+    <button type="button" role="tab" class="tab" data-view="month"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>월간</button>
+  </nav>
+</div>
+
+<dialog id="editor-dialog" class="sheet" aria-labelledby="editor-title">
+  <form id="editor-form" method="dialog" novalidate>
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <h2 id="editor-title">트래커 추가</h2>
+
+    <div id="preset-section" class="field">
+      <span class="field-label">빠르게 시작하기</span>
+      <div id="preset-chips" class="chip-row"></div>
+    </div>
+
+    <div class="field-row">
+      <label class="field emoji-field">
+        <span class="field-label">아이콘</span>
+        <input id="f-emoji" name="emoji" maxlength="8" autocomplete="off" />
+      </label>
+      <label class="field grow">
+        <span class="field-label">이름</span>
+        <input id="f-name" name="name" maxlength="30" placeholder="예: 영어 쉐도잉" autocomplete="off" required />
+      </label>
+    </div>
+    <div id="emoji-suggestions" class="chip-row emoji-row"></div>
+
+    <div class="field">
+      <span class="field-label">색상</span>
+      <div id="color-swatches" class="swatches" role="radiogroup" aria-label="색상"></div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">기록 방식</span>
+      <div class="segmented" role="radiogroup" aria-label="기록 방식">
+        <label><input type="radio" name="type" value="check" checked /><span>체크 (했다/안 했다)</span></label>
+        <label><input type="radio" name="type" value="count" /><span>수치 (분·회·개)</span></label>
+      </div>
+    </div>
+
+    <div id="count-fields" class="field-row three" hidden>
+      <label class="field">
+        <span class="field-label">하루 목표</span>
+        <input id="f-goal" name="goal" type="number" inputmode="numeric" min="1" value="30" />
+      </label>
+      <label class="field">
+        <span class="field-label">단위</span>
+        <input id="f-unit" name="unit" maxlength="10" placeholder="분" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span class="field-label">+ 버튼 단위</span>
+        <input id="f-step" name="step" type="number" inputmode="numeric" min="1" value="10" />
+      </label>
+    </div>
+
+    <p id="editor-error" class="error" role="alert"></p>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn danger ghost" id="delete-btn" hidden>삭제</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="cancel-btn">취소</button>
+      <button type="submit" class="btn primary" id="save-btn">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings-dialog" class="sheet" aria-labelledby="settings-title">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <h2 id="settings-title">트래커 관리</h2>
+  <ul id="manage-list" class="manage-list"></ul>
+  <h3>백업</h3>
+  <p class="hint">기록은 이 기기의 브라우저에만 저장돼요. 기기를 바꾸거나 앱으로 옮길 때 백업 파일을 사용하세요.</p>
+  <div class="sheet-actions wrap">
+    <button type="button" class="btn ghost" id="export-btn">백업 내보내기</button>
+    <label class="btn ghost">
+      백업 가져오기
+      <input type="file" id="import-input" accept="application/json,.json" hidden />
+    </label>
+  </div>
+  <div class="sheet-actions footer">
+    <span class="spacer"></span>
+    <button type="button" class="btn primary" id="settings-close-btn">닫기</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="js/dates.js?v=1"></script>
+<script src="js/store.js?v=1"></script>
+<script src="js/stats.js?v=1"></script>
+<script src="js/storage.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

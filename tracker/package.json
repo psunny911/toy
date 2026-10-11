@@ -1,0 +1,9 @@
+{
+  "name": "habit-tracker-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "빌드 없이 브라우저에서 바로 여는 습관 트래커 (영어 학습·영양제·운동 기록)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
