@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none';"
+/>
+<meta name="theme-color" content="#111317" />
+<meta name="description" content="5초씩 찍어서 이어 붙이는 브이로그. 촬영시각과 가운데 문구가 영상에 찍힌다." />
+<title>5초 브이로그</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/style.css?v=1" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>5초 브이로그</h1>
+    <button type="button" class="text-btn" id="clear-btn" hidden>모두 지우기</button>
+  </header>
+
+  <section class="viewfinder" id="viewfinder" aria-label="카메라 미리보기">
+    <video id="live" playsinline muted autoplay></video>
+    <canvas id="live-overlay" class="overlay" aria-hidden="true"></canvas>
+    <div class="rec-badge" id="rec-badge" hidden><span class="rec-dot"></span>REC <span id="rec-sec">5</span></div>
+    <div class="cam-msg" id="cam-msg" hidden>
+      <p id="cam-msg-text">카메라를 켜면 촬영할 수 있어요.</p>
+      <button type="button" class="pill" id="cam-start">카메라 켜기</button>
+    </div>
+  </section>
+
+  <label class="caption-field">
+    <span class="sr-only">가운데에 넣을 문구</span>
+    <input type="text" id="caption" maxlength="40" placeholder="가운데에 넣을 문구 (선택)" autocomplete="off" enterkeyhint="done" />
+  </label>
+
+  <div class="controls">
+    <div class="ctrl-side"><span id="next-hint" class="hint">5초씩 녹화돼요</span></div>
+    <button type="button" class="rec-btn" id="rec-btn" aria-label="5초 녹화" disabled>
+      <svg viewBox="0 0 80 80" aria-hidden="true">
+        <circle class="ring-bg" cx="40" cy="40" r="36" />
+        <circle class="ring-fg" id="rec-ring" cx="40" cy="40" r="36" />
+      </svg>
+      <span class="rec-core"></span>
+    </button>
+    <div class="ctrl-side end">
+      <button type="button" class="icon-btn" id="flip-btn" aria-label="전면/후면 카메라 전환" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <section class="clips" aria-labelledby="clips-title">
+    <div class="clips-head">
+      <h2 id="clips-title">클립 <span id="clip-count">0</span></h2>
+      <span class="muted" id="clip-total">0:00</span>
+    </div>
+    <ol class="clip-list" id="clip-list"></ol>
+    <p class="empty" id="clip-empty">녹화한 클립이 여기에 순서대로 쌓여요.<br />누르면 문구 수정·순서 변경·삭제를 할 수 있어요.</p>
+  </section>
+
+  <footer class="bottombar">
+    <button type="button" class="primary-btn" id="make-btn" disabled>영상 만들기</button>
+  </footer>
+</div>
+
+<div class="sheet-backdrop" id="clip-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="clip-sheet-title">
+    <div class="sheet-head">
+      <h3 id="clip-sheet-title">클립</h3>
+      <button type="button" class="icon-btn small" data-close aria-label="닫기">✕</button>
+    </div>
+    <div class="player" id="clip-player">
+      <video id="clip-video" playsinline loop></video>
+      <canvas id="clip-overlay" class="overlay" aria-hidden="true"></canvas>
+    </div>
+    <label class="caption-field">
+      <span class="field-label">가운데 문구</span>
+      <input type="text" id="clip-caption" maxlength="40" placeholder="비워두면 문구 없음" autocomplete="off" enterkeyhint="done" />
+    </label>
+    <div class="sheet-actions">
+      <button type="button" class="pill" id="clip-left">◀ 앞으로</button>
+      <button type="button" class="pill" id="clip-right">뒤로 ▶</button>
+      <button type="button" class="pill danger" id="clip-delete">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="render-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="render-title">
+    <div class="sheet-head">
+      <h3 id="render-title">영상 만드는 중</h3>
+      <button type="button" class="icon-btn small" data-close id="render-close" aria-label="닫기" hidden>✕</button>
+    </div>
+    <div id="render-progress">
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+      <p class="muted center" id="progress-text">클립을 차례로 재생하면서 합치고 있어요. 화면을 켜 둔 채로 기다려 주세요.</p>
+    </div>
+    <div id="render-result" hidden>
+      <div class="player" id="result-player"><video id="result-video" playsinline controls></video></div>
+      <div class="sheet-actions">
+        <a class="primary-btn" id="save-btn" download>저장</a>
+        <button type="button" class="pill" id="share-btn" hidden>공유</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="js/format.js?v=1"></script>
+<script src="js/layout.js?v=1"></script>
+<script src="js/clips.js?v=1"></script>
+<script src="js/overlay.js?v=1"></script>
+<script src="js/db.js?v=1"></script>
+<script src="js/merge.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-name: Deploy web/ and tracker/ to GitHub Pages
+name: Deploy web/, tracker/ and vlog/ to GitHub Pages
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - "web/**"
       - "tracker/**"
+      - "vlog/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
@@ -33,12 +34,17 @@ jobs:
         working-directory: tracker
         run: node --test
 
-      # 사이트 루트 = web/ (사진 콜라주), /tracker/ = 데일리 트래커
+      - name: Test vlog logic
+        working-directory: vlog
+        run: node --test
+
+      # 사이트 루트 = web/ (사진 콜라주), /tracker/ = 데일리 트래커, /vlog/ = 5초 브이로그
       - name: Assemble site
         run: |
-          mkdir -p _site/tracker
+          mkdir -p _site/tracker _site/vlog
           cp -r web/. _site/
           cp -r tracker/index.html tracker/manifest.webmanifest tracker/sw.js tracker/css tracker/js tracker/icons _site/tracker/
+          cp -r vlog/index.html vlog/css vlog/js vlog/icons _site/vlog/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

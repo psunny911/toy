@@ -1,0 +1,9 @@
+{
+  "name": "vlog-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "빌드 없이 브라우저에서 바로 여는 5초 브이로그 (촬영 → 이어 붙이기)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
