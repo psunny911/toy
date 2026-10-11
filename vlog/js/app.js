@@ -7,7 +7,7 @@
     live: $('live'), liveOverlay: $('live-overlay'), viewfinder: $('viewfinder'),
     recBadge: $('rec-badge'), recSec: $('rec-sec'), recRing: $('rec-ring'),
     camMsg: $('cam-msg'), camMsgText: $('cam-msg-text'), camStart: $('cam-start'),
-    caption: $('caption'), recBtn: $('rec-btn'), flipBtn: $('flip-btn'), nextHint: $('next-hint'),
+    caption: $('caption'), recBtn: $('rec-btn'), flipBtn: $('flip-btn'),
     clipList: $('clip-list'), clipEmpty: $('clip-empty'), clipCount: $('clip-count'), clipTotal: $('clip-total'),
     clearBtn: $('clear-btn'), makeBtn: $('make-btn'),
     clipSheet: $('clip-sheet'), clipTitle: $('clip-sheet-title'), clipPlayer: $('clip-player'),
@@ -270,8 +270,7 @@
     els.clipEmpty.hidden = clips.length > 0;
     els.clearBtn.hidden = clips.length === 0;
     els.makeBtn.disabled = clips.length === 0 || state.rendering;
-    els.makeBtn.textContent = clips.length ? `영상 만들기 · ${Format.formatDuration(Clips.totalDuration(clips))}` : '영상 만들기';
-    els.nextHint.textContent = clips.length ? `${clips.length + 1}번째 클립` : `${state.prefs.seconds}초씩 녹화돼요`;
+    els.makeBtn.textContent = clips.length ? `영상 만들기\n${Format.formatDuration(Clips.totalDuration(clips))}` : '영상 만들기';
     els.recBtn.setAttribute('aria-label', `${state.prefs.seconds}초 녹화`);
     paintSeg(els.secondsSeg, String(state.prefs.seconds));
     paintSeg(els.stampSeg, state.prefs.stampDir);

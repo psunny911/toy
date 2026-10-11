@@ -11,7 +11,7 @@
 <meta name="description" content="1·2·3·5초씩 찍어서 이어 붙이는 브이로그. 촬영시각과 가운데 문구가 영상에 찍힌다." />
 <title>1·2·3·5초 브이로그</title>
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="css/style.css?v=5" />
+<link rel="stylesheet" href="css/style.css?v=6" />
 </head>
 <body>
 <div id="app">
@@ -50,22 +50,6 @@
     </div>
   </div>
 
-  <div class="controls">
-    <div class="ctrl-side"><span id="next-hint" class="hint"></span></div>
-    <button type="button" class="rec-btn" id="rec-btn" aria-label="녹화" disabled>
-      <svg viewBox="0 0 80 80" aria-hidden="true">
-        <circle class="ring-bg" cx="40" cy="40" r="36" />
-        <circle class="ring-fg" id="rec-ring" cx="40" cy="40" r="36" />
-      </svg>
-      <span class="rec-core"></span>
-    </button>
-    <div class="ctrl-side end">
-      <button type="button" class="icon-btn" id="flip-btn" aria-label="전면/후면 카메라 전환" disabled>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/></svg>
-      </button>
-    </div>
-  </div>
-
   <section class="clips" aria-labelledby="clips-title">
     <div class="clips-head">
       <h2 id="clips-title">클립 <span id="clip-count">0</span></h2>
@@ -75,8 +59,25 @@
     <p class="empty" id="clip-empty">녹화한 클립이 여기에 순서대로 쌓여요.<br />누르면 문구 수정·순서 변경·개별 저장·삭제를 할 수 있어요.</p>
   </section>
 
-  <footer class="bottombar">
-    <button type="button" class="primary-btn" id="make-btn" disabled>영상 만들기</button>
+  <!-- 촬영 중에도 미리보기와 버튼이 한 화면에 보이도록 하단 고정 -->
+  <footer class="dock">
+    <div class="controls">
+      <div class="ctrl-side">
+        <button type="button" class="make-btn" id="make-btn" disabled>영상 만들기</button>
+      </div>
+      <button type="button" class="rec-btn" id="rec-btn" aria-label="녹화" disabled>
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <circle class="ring-bg" cx="40" cy="40" r="36" />
+          <circle class="ring-fg" id="rec-ring" cx="40" cy="40" r="36" />
+        </svg>
+        <span class="rec-core"></span>
+      </button>
+      <div class="ctrl-side end">
+        <button type="button" class="icon-btn" id="flip-btn" aria-label="전면/후면 카메라 전환" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/></svg>
+        </button>
+      </div>
+    </div>
   </footer>
 </div>
 
@@ -126,12 +127,12 @@
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="js/format.js?v=5"></script>
-<script src="js/layout.js?v=5"></script>
-<script src="js/clips.js?v=5"></script>
-<script src="js/overlay.js?v=5"></script>
-<script src="js/db.js?v=5"></script>
-<script src="js/merge.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/format.js?v=6"></script>
+<script src="js/layout.js?v=6"></script>
+<script src="js/clips.js?v=6"></script>
+<script src="js/overlay.js?v=6"></script>
+<script src="js/db.js?v=6"></script>
+<script src="js/merge.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

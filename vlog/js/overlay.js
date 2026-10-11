@@ -14,7 +14,7 @@
 
   /**
    * o = { stamp: '2026.10.11 14:32', text: '가운데 문구', stampDir: 'horizontal' | 'vertical' }
-   * stamp/text는 생략 가능. 가로 시각은 왼쪽 아래, 세로 시각은 오른쪽 아래에서 위로 읽히게 오른쪽 가장자리를 따라 세운다.
+   * stamp/text는 생략 가능. 가로 시각은 오른쪽 아래, 세로 시각은 왼쪽 아래에서 위로 읽히게 왼쪽 가장자리를 따라 세운다.
    */
   function drawOverlay(ctx, w, h, o) {
     const m = Layout.overlayMetrics(w, h);
@@ -48,15 +48,16 @@
       ctx.shadowBlur = m.stampSize * 0.4;
       ctx.fillStyle = STAMP_COLOR;
       if (o.stampDir === 'vertical') {
-        // -90° 회전: 글자 진행 방향이 위쪽, 글자 몸통은 기준선 왼쪽(화면 안쪽)에 놓인다
-        ctx.translate(w - m.margin, h - m.margin);
+        // 왼쪽 가장자리, -90° 회전: 글자 진행 방향이 위쪽.
+        // 기준선을 'top'으로 둬야 글자 몸통이 기준선 오른쪽(화면 안쪽)에 놓인다
+        ctx.translate(m.margin, h - m.margin);
         ctx.rotate(-Math.PI / 2);
         ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
         ctx.fillText(o.stamp, 0, 0);
       } else {
-        // 가로는 왼쪽 아래: 주로 오른손으로 쥐어서 오른쪽은 엄지에 가린다
-        ctx.textAlign = 'left';
-        ctx.fillText(o.stamp, m.margin, h - m.margin);
+        ctx.textAlign = 'right';
+        ctx.fillText(o.stamp, w - m.margin, h - m.margin);
       }
     }
 
