@@ -22,6 +22,11 @@
   const IRREGULAR = {
     "can't": ['can', 'not'], cannot: ['can', 'not'], "won't": ['will', 'not'], "shan't": ['shall', 'not'],
     "ain't": ['am', 'not'], "let's": ['let', 'us'], lets: ['let', 'us'], "y'all": ['you', 'all'],
+    // 구어체 줄임말: 인식기가 풀어 쓰거나(going to) 줄여 쓸(gonna) 수 있어 양쪽을 같은 꼴로 맞춘다
+    gonna: ['going', 'to'], wanna: ['want', 'to'], gotta: ['got', 'to'], hafta: ['have', 'to'],
+    hasta: ['has', 'to'], oughta: ['ought', 'to'], gotcha: ['got', 'you'], betcha: ['bet', 'you'],
+    kinda: ['kind', 'of'], sorta: ['sort', 'of'], outta: ['out', 'of'], lotta: ['lot', 'of'],
+    lemme: ['let', 'me'], gimme: ['give', 'me'], dunno: ['do', 'not', 'know'], "y'know": ['you', 'know'],
   };
   const SAME = { okay: 'ok', 'o.k.': 'ok', alright: 'all right', '&': 'and', '%': 'percent', percents: 'percent' };
 

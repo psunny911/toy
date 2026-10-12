@@ -67,3 +67,12 @@ test('splitWords keeps punctuation for display', () => {
   const [w] = S.splitWords('"Really?"');
   assert.deepEqual([w.pre, w.core, w.post], ['"', 'Really', '?"']);
 });
+
+test('casual reductions match their full forms either way', () => {
+  assert.equal(S.score("I'm gonna call you later.", 'I am going to call you later').rate, 1);
+  assert.equal(S.score("I'm going to call you later.", "I'm gonna call you later").rate, 1);
+  assert.equal(S.score('I wanna go home.', 'I want to go home').rate, 1);
+  assert.equal(S.score('You gotta try this.', 'you got to try this').rate, 1);
+  assert.equal(S.score("Gimme a sec, I dunno.", 'give me a sec I do not know').rate, 1);
+  assert.equal(S.score("It's kinda cold.", 'it is kind of cold').rate, 1);
+});

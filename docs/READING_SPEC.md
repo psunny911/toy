@@ -22,7 +22,8 @@
 
 1. 목표 문장과 인식 결과를 단어(토큰)로 나눈다. 대소문자·문장부호는 무시한다.
 2. 같은 말로 보는 것: 축약형(`I'm` = `I am`, `don't` = `do not`, `can't` = `can not`, `let's` = `lets` = `let us`),
-   숫자(`2` = `two`, `21st` = `twenty first`, `7:30` = `seven thirty`, `1,500`), `okay` = `OK`, `&` = `and`.
+   숫자(`2` = `two`, `21st` = `twenty first`, `7:30` = `seven thirty`, `1,500`), `okay` = `OK`, `&` = `and`,
+   구어체 줄임말(`gonna` = `going to`, `wanna` = `want to`, `gotta` = `got to`, `kinda` = `kind of`, `gimme`, `lemme`, `dunno` 등).
    5글자 이상 단어는 철자 한 글자 차이(`colour`/`color`)까지 봐준다 (9글자 이상은 두 글자).
 3. 최장 공통 부분열(LCS)로 순서를 지켜 맞춘 뒤, **정확도 = 맞게 읽은 목표 단어 수 ÷ 목표 단어 수**.
    군말(um, uh)이나 반복은 감점하지 않는다. 순서가 뒤바뀌면 맞지 않는다.
