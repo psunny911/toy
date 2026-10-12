@@ -12,7 +12,7 @@
 <meta name="description" content="영어 문장을 소리 내어 읽으면 음성 인식으로 채점해서, 80% 이상 맞으면 다음 문장으로 넘어가는 학습 앱." />
 <title>소리 내어 읽기</title>
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="css/style.css?v=2" />
+<link rel="stylesheet" href="css/style.css?v=3" />
 </head>
 <body>
 <div id="app">
@@ -32,6 +32,7 @@
     <span class="progress-text"><b id="pos">1</b> / <span id="count">0</span></span>
     <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
     <span class="progress-pass" id="pass-count">통과 0</span>
+    <button type="button" class="first-btn" id="first-btn" aria-label="첫 문장으로">⏮ 처음으로</button>
   </div>
 
   <div class="segmented" role="radiogroup" aria-label="보기 방식" id="mode-seg">
@@ -118,12 +119,12 @@ How are you?,잘 지내요?
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="js/csv.js?v=2"></script>
-<script src="js/score.js?v=2"></script>
-<script src="js/mask.js?v=2"></script>
-<script src="js/progress.js?v=2"></script>
-<script src="js/samples.js?v=2"></script>
-<script src="js/speech.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/csv.js?v=3"></script>
+<script src="js/score.js?v=3"></script>
+<script src="js/mask.js?v=3"></script>
+<script src="js/progress.js?v=3"></script>
+<script src="js/samples.js?v=3"></script>
+<script src="js/speech.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

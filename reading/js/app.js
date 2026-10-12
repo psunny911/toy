@@ -10,7 +10,7 @@
     speakBtn: $('speak-btn'), peekBtn: $('peek-btn'), shuffleBtn: $('shuffle-btn'),
     done: $('done'), doneStats: $('done-stats'), retryLeftBtn: $('retry-left-btn'), restartBtn: $('restart-btn'),
     feedback: $('feedback'), score: $('score'), resultMsg: $('result-msg'), heard: $('heard'),
-    prevBtn: $('prev-btn'), micBtn: $('mic-btn'), nextBtn: $('next-btn'),
+    firstBtn: $('first-btn'), prevBtn: $('prev-btn'), micBtn: $('mic-btn'), nextBtn: $('next-btn'),
     importSheet: $('import-sheet'), fileInput: $('file-input'), pasteInput: $('paste-input'),
     pasteBtn: $('paste-btn'), sampleBtn: $('sample-btn'),
     listSheet: $('list-sheet'), listName: $('list-name'), sentenceList: $('sentence-list'),
@@ -196,6 +196,7 @@
     els.feedback.hidden = p.done;
     els.micBtn.disabled = !Speech.supported || p.done;
     els.prevBtn.disabled = p.index === 0 && !p.done;
+    els.firstBtn.disabled = p.index === 0 && !p.done;
     els.nextBtn.disabled = p.done;
 
     if (p.done) {
@@ -325,6 +326,8 @@
     else goPrev();
   });
   els.nextBtn.addEventListener('click', goNext);
+  // 통과 기록은 그대로 두고 첫 문장으로만 이동 (기록까지 지우는 건 완료 화면의 '처음부터 다시')
+  els.firstBtn.addEventListener('click', () => setProgress(Progress.goTo(state.progress, 0)));
 
   els.modeSeg.addEventListener('click', (e) => {
     const b = e.target.closest('[role="radio"]');

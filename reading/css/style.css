@@ -175,6 +175,18 @@ button:disabled {
   white-space: nowrap;
 }
 
+.first-btn {
+  flex: none;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* ---------- 보기 방식 ---------- */
 
 .segmented {
