@@ -1,0 +1,9 @@
+{
+  "name": "reading-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "빌드 없이 브라우저에서 바로 여는 영어 문장 소리 내어 읽기 학습 (음성 인식 채점)",
+  "scripts": {
+    "test": "node --test"
+  }
+}

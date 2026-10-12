@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none';"
+/>
+<meta name="theme-color" content="#f5f6fa" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#121419" media="(prefers-color-scheme: dark)" />
+<meta name="description" content="영어 문장을 소리 내어 읽으면 음성 인식으로 채점해서, 80% 이상 맞으면 다음 문장으로 넘어가는 학습 앱." />
+<title>소리 내어 읽기</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/style.css?v=1" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>소리 내어 읽기</h1>
+    <div class="top-actions">
+      <button type="button" class="text-btn" id="list-btn">목록</button>
+      <button type="button" class="text-btn" id="import-btn">문장 불러오기</button>
+    </div>
+  </header>
+
+  <p class="banner" id="unsupported" hidden>
+    이 브라우저는 음성 인식을 지원하지 않아요. Android는 <b>Chrome</b>, iPhone은 <b>Safari</b>로 열어 주세요.
+  </p>
+
+  <div class="progress-row">
+    <span class="progress-text"><b id="pos">1</b> / <span id="count">0</span></span>
+    <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+    <span class="progress-pass" id="pass-count">통과 0</span>
+  </div>
+
+  <div class="segmented" role="radiogroup" aria-label="보기 방식" id="mode-seg">
+    <button type="button" role="radio" data-value="full">전체 문장</button>
+    <button type="button" role="radio" data-value="partial">일부 단어 숨기기</button>
+    <button type="button" role="radio" data-value="hidden">뜻만 보기</button>
+  </div>
+
+  <main class="card" id="card">
+    <section id="study">
+      <p class="meaning" id="meaning"></p>
+      <p class="sentence" id="sentence" lang="en" aria-live="polite"></p>
+      <div class="card-tools">
+        <button type="button" class="chip" id="speak-btn">🔊 듣기</button>
+        <button type="button" class="chip" id="peek-btn" aria-pressed="false">정답 보기</button>
+        <button type="button" class="chip" id="shuffle-btn">다른 단어 숨기기</button>
+      </div>
+    </section>
+
+    <section class="done" id="done" hidden>
+      <p class="done-emoji" aria-hidden="true">🎉</p>
+      <h2>마지막 문장까지 읽었어요</h2>
+      <p class="muted" id="done-stats"></p>
+      <div class="done-actions">
+        <button type="button" class="primary-btn" id="retry-left-btn">못 넘은 문장 다시</button>
+        <button type="button" class="pill" id="restart-btn">처음부터 다시</button>
+      </div>
+    </section>
+  </main>
+
+  <section class="feedback" id="feedback" aria-live="polite">
+    <div class="result-line">
+      <span class="score" id="score" hidden></span>
+      <span class="result-msg" id="result-msg">마이크를 누르고 문장을 소리 내어 읽어 보세요.</span>
+    </div>
+    <p class="heard" id="heard" lang="en" hidden></p>
+  </section>
+
+  <footer class="dock">
+    <button type="button" class="nav-btn" id="prev-btn">◀ 이전</button>
+    <button type="button" class="mic-btn" id="mic-btn" aria-label="읽기 시작">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </button>
+    <button type="button" class="nav-btn" id="next-btn">건너뛰기 ▶</button>
+  </footer>
+</div>
+
+<div class="sheet-backdrop" id="import-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="import-title">
+    <div class="sheet-head">
+      <h3 id="import-title">문장 불러오기</h3>
+      <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button>
+    </div>
+    <p class="muted small">CSV 한 줄에 한 문장. <b>첫 칸은 영어 문장, 둘째 칸은 뜻</b>이에요. 첫 줄 머리글(english,meaning)은 있어도 되고 없어도 돼요. 쉼표가 들어간 문장은 큰따옴표로 감싸 주세요.</p>
+    <pre class="example">english,meaning
+How are you?,잘 지내요?
+"Well, I think so.","글쎄, 그런 것 같아요."</pre>
+    <label class="primary-btn file-btn">
+      CSV 파일 고르기
+      <input type="file" id="file-input" accept=".csv,.tsv,.txt,text/csv,text/plain" />
+    </label>
+    <label class="field">
+      <span class="field-label">또는 붙여넣기 (엑셀·구글 시트에서 두 열을 복사해도 돼요)</span>
+      <textarea id="paste-input" rows="5" placeholder="I like it.,좋아요." autocomplete="off" spellcheck="false"></textarea>
+    </label>
+    <div class="sheet-actions">
+      <button type="button" class="pill" id="paste-btn">붙여넣은 문장으로 시작</button>
+      <button type="button" class="pill" id="sample-btn">예시 문장으로 시작</button>
+      <a class="pill" href="sample/sentences.csv" download="sentences.csv">예시 CSV 받기</a>
+    </div>
+    <p class="muted small">불러오면 지금 목록과 진행 기록이 새 문장으로 바뀌어요.</p>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="list-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="list-title">
+    <div class="sheet-head">
+      <h3 id="list-title">문장 목록 <span class="muted" id="list-name"></span></h3>
+      <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button>
+    </div>
+    <ol class="sentence-list" id="sentence-list"></ol>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="js/csv.js?v=1"></script>
+<script src="js/score.js?v=1"></script>
+<script src="js/mask.js?v=1"></script>
+<script src="js/progress.js?v=1"></script>
+<script src="js/samples.js?v=1"></script>
+<script src="js/speech.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>
