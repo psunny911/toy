@@ -12,7 +12,7 @@
 <meta name="description" content="영어 문장을 소리 내어 읽으면 음성 인식으로 채점해서, 80% 이상 맞으면 다음 문장으로 넘어가는 학습 앱." />
 <title>소리 내어 읽기</title>
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="css/style.css?v=3" />
+<link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body>
 <div id="app">
@@ -29,7 +29,7 @@
   </p>
 
   <div class="progress-row">
-    <span class="progress-text"><b id="pos">1</b> / <span id="count">0</span></span>
+    <button type="button" class="pos-btn" id="pos-btn" aria-label="번호로 이동"><b id="pos">1</b> / <span id="count">0</span> <svg class="pos-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
     <span class="progress-pass" id="pass-count">통과 0</span>
     <button type="button" class="first-btn" id="first-btn" aria-label="첫 문장으로">⏮ 처음으로</button>
@@ -113,18 +113,26 @@ How are you?,잘 지내요?
       <h3 id="list-title">문장 목록 <span class="muted" id="list-name"></span></h3>
       <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button>
     </div>
+    <div class="jump-row">
+      <label class="jump-field">
+        <span class="sr-only">이동할 문장 번호</span>
+        <input type="number" id="jump-input" inputmode="numeric" min="1" step="1" placeholder="번호" autocomplete="off" />
+      </label>
+      <span class="muted" id="jump-total">/ 0</span>
+      <button type="button" class="primary-btn" id="jump-btn">이동</button>
+    </div>
     <ol class="sentence-list" id="sentence-list"></ol>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="js/csv.js?v=3"></script>
-<script src="js/score.js?v=3"></script>
-<script src="js/mask.js?v=3"></script>
-<script src="js/progress.js?v=3"></script>
-<script src="js/samples.js?v=3"></script>
-<script src="js/speech.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/csv.js?v=4"></script>
+<script src="js/score.js?v=4"></script>
+<script src="js/mask.js?v=4"></script>
+<script src="js/progress.js?v=4"></script>
+<script src="js/samples.js?v=4"></script>
+<script src="js/speech.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

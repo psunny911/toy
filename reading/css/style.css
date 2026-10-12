@@ -152,8 +152,35 @@ button:disabled {
   color: var(--muted);
 }
 
-.progress-text b {
+.pos-btn {
+  flex: none;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pos-btn b {
   color: var(--text);
+}
+
+.pos-btn:active {
+  background: var(--surface-2);
+}
+
+.pos-caret {
+  width: 12px;
+  height: 12px;
+  vertical-align: -1px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .progress {
@@ -602,6 +629,43 @@ button:disabled {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+.jump-row {
+  position: sticky;
+  top: -18px; /* .sheet 위쪽 padding만큼 올려 맨 위에 붙인다 */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -16px 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.jump-field {
+  flex: 1;
+  max-width: 140px;
+}
+
+.jump-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 16px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .sentence-list {

@@ -14,6 +14,7 @@
     importSheet: $('import-sheet'), fileInput: $('file-input'), pasteInput: $('paste-input'),
     pasteBtn: $('paste-btn'), sampleBtn: $('sample-btn'),
     listSheet: $('list-sheet'), listName: $('list-name'), sentenceList: $('sentence-list'),
+    posBtn: $('pos-btn'), jumpInput: $('jump-input'), jumpTotal: $('jump-total'), jumpBtn: $('jump-btn'),
     toast: $('toast'),
   };
 
@@ -283,8 +284,12 @@
       const btn = el('button', 'list-item');
       btn.type = 'button';
       if (i === state.progress.index && !state.progress.done) btn.classList.add('current');
-      const mark = el('span', 'mark', state.progress.passed[i] ? '✓' : String(i + 1));
-      if (state.progress.passed[i]) mark.classList.add('ok');
+      // 번호로 이동할 수 있게 번호는 항상 보이고, 통과한 문장은 초록 동그라미
+      const mark = el('span', 'mark', String(i + 1));
+      if (state.progress.passed[i]) {
+        mark.classList.add('ok');
+        mark.title = '통과';
+      }
       const body = el('span', 'list-body');
       body.append(el('span', 'list-en', item.en));
       if (item.ko) body.append(el('span', 'list-ko', item.ko));
@@ -296,6 +301,32 @@
       li.append(btn);
       list.append(li);
     });
+  }
+
+  function openList(focusJump) {
+    renderList();
+    const n = state.deck.items.length;
+    els.jumpInput.max = String(n);
+    els.jumpInput.value = '';
+    els.jumpInput.placeholder = `1~${n}`;
+    els.jumpTotal.textContent = `/ ${n}`;
+    openSheet(els.listSheet);
+    const current = els.sentenceList.querySelector('.current');
+    if (current) current.scrollIntoView({ block: 'center' });
+    // 포커스가 목록을 맨 위로 되돌리지 않게 (입력칸은 sticky라 항상 보인다)
+    if (focusJump) els.jumpInput.focus({ preventScroll: true });
+  }
+
+  function jumpToNumber() {
+    const n = state.deck.items.length;
+    const num = Number(els.jumpInput.value);
+    if (!Number.isInteger(num) || num < 1 || num > n) {
+      toast(`1~${n} 사이 번호를 넣어 주세요.`);
+      els.jumpInput.focus();
+      return;
+    }
+    closeSheet(els.listSheet);
+    setProgress(Progress.goTo(state.progress, num - 1));
   }
 
   // ---------- 시트 ----------
@@ -353,7 +384,12 @@
   els.restartBtn.addEventListener('click', () => setProgress(Progress.fresh(state.deck.items)));
 
   els.importBtn.addEventListener('click', () => openSheet(els.importSheet));
-  els.listBtn.addEventListener('click', () => { renderList(); openSheet(els.listSheet); });
+  els.listBtn.addEventListener('click', () => openList(false));
+  els.posBtn.addEventListener('click', () => openList(true));
+  els.jumpBtn.addEventListener('click', jumpToNumber);
+  els.jumpInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); jumpToNumber(); }
+  });
 
   els.fileInput.addEventListener('change', async () => {
     const file = els.fileInput.files && els.fileInput.files[0];
