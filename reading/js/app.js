@@ -11,6 +11,7 @@
     speakBtn: $('speak-btn'), peekBtn: $('peek-btn'), shuffleBtn: $('shuffle-btn'),
     done: $('done'), doneStats: $('done-stats'), retryLeftBtn: $('retry-left-btn'), restartBtn: $('restart-btn'),
     feedback: $('feedback'), score: $('score'), resultMsg: $('result-msg'), heard: $('heard'),
+    statText: $('stat-text'), learnedBtn: $('learned-btn'), learnedTag: $('learned-tag'), listSummary: $('list-summary'),
     firstBtn: $('first-btn'), prevBtn: $('prev-btn'), micBtn: $('mic-btn'), nextBtn: $('next-btn'),
     importSheet: $('import-sheet'), fileInput: $('file-input'), pasteInput: $('paste-input'),
     pasteBtn: $('paste-btn'), sampleBtn: $('sample-btn'), newSetName: $('new-set-name'),
@@ -213,10 +214,14 @@
     state.result = result;
     state.heard = result.heard;
     result.words.forEach((w, i) => { if (w.ok) state.revealed.add(i); });
+    const wasLearned = Progress.isLearned(state.progress, index);
     state.progress = Progress.record(state.progress, index, result.passed);
     saveProgress();
     if (result.passed) {
       state.message = index + 1 < deck().items.length ? '통과! 다음 문장으로 넘어가요.' : '통과! 마지막 문장이에요.';
+      if (!wasLearned && Progress.isLearned(state.progress, index)) {
+        state.message = `통과 ${Progress.AUTO_LEARN_PASSES}회! 학습 완료로 표시했어요.`;
+      }
       state.advanceTimer = setTimeout(goNext, ADVANCE_DELAY_MS);
     } else {
       const missed = result.total - result.matched;
@@ -250,7 +255,7 @@
     els.nextBtn.disabled = p.done;
 
     if (p.done) {
-      els.doneStats.textContent = `${sum.total}문장 중 ${sum.passed}문장 통과 · 읽은 횟수 ${sum.tries}번`;
+      els.doneStats.textContent = `이번 회차 ${sum.total}문장 중 ${sum.passed}문장 통과 · 학습 완료 ${sum.learned}문장`;
       els.retryLeftBtn.hidden = sum.passed === sum.total;
       els.micBtn.classList.remove('listening');
       return;
@@ -262,6 +267,7 @@
     els.meaning.hidden = !els.meaning.textContent;
     els.meaning.classList.toggle('big', state.mode === 'hidden');
     renderSentence(item, passedNow);
+    renderLearned();
 
     els.peekBtn.hidden = state.mode === 'full' || passedNow;
     els.peekBtn.setAttribute('aria-pressed', String(state.peek));
@@ -324,12 +330,39 @@
     els.feedback.classList.toggle('listening', !!state.listening);
   }
 
+  /** 카드 위쪽: 이 문장의 누적 통과·읽은 횟수와 학습 완료 버튼 */
+  function renderLearned() {
+    const p = state.progress;
+    const i = p.index;
+    const on = Progress.isLearned(p, i);
+    const source = Progress.learnedSource(p, i);
+    els.statText.textContent = `통과 ${p.passes[i]}회 · 읽음 ${p.tries[i]}회`;
+    els.learnedBtn.setAttribute('aria-pressed', String(on));
+    if (source === 'manual') els.learnedTag.textContent = on ? '직접' : '직접 끔';
+    else if (on) els.learnedTag.textContent = '자동';
+    else els.learnedTag.textContent = `${p.passes[i]}/${Progress.AUTO_LEARN_PASSES}`;
+    els.learnedBtn.title = source === 'manual'
+      ? '직접 설정한 값이에요. 통과 횟수와 상관없이 유지돼요.'
+      : `통과 ${Progress.AUTO_LEARN_PASSES}회가 되면 자동으로 켜져요.`;
+  }
+
+  /** 학습 완료 켜고 끄기 (직접 설정은 자동 규칙보다 우선) */
+  function toggleLearned(index) {
+    state.progress = Progress.toggleLearned(state.progress, index);
+    saveProgress();
+    const on = Progress.isLearned(state.progress, index);
+    toast(on ? `${index + 1}번 문장을 학습 완료로 표시했어요.` : `${index + 1}번 문장의 학습 완료를 껐어요.`);
+    render();
+  }
+
   function renderList() {
     const list = els.sentenceList;
     list.replaceChildren();
     els.listName.textContent = `· ${deck().name}`;
+    const sum = Progress.summary(state.progress);
+    els.listSummary.textContent = `완료 ${sum.learned}/${sum.total}`;
     deck().items.forEach((item, i) => {
-      const li = el('li');
+      const li = el('li', 'list-row');
       const btn = el('button', 'list-item');
       btn.type = 'button';
       if (i === state.progress.index && !state.progress.done) btn.classList.add('current');
@@ -342,12 +375,27 @@
       const body = el('span', 'list-body');
       body.append(el('span', 'list-en', item.en));
       if (item.ko) body.append(el('span', 'list-ko', item.ko));
+      const p = state.progress;
+      const source = Progress.learnedSource(p, i);
+      const learned = Progress.isLearned(p, i);
+      body.append(el('span', 'list-stat',
+        `통과 ${p.passes[i]}회 · 읽음 ${p.tries[i]}회` + (learned ? (source === 'manual' ? ' · 완료(직접)' : ' · 완료(자동)') : (source === 'manual' ? ' · 완료 끔(직접)' : ''))));
       btn.append(mark, body);
       btn.addEventListener('click', () => {
         closeSheet(els.listSheet);
         setProgress(Progress.goTo(state.progress, i));
       });
-      li.append(btn);
+      const check = el('button', 'list-learned');
+      check.type = 'button';
+      check.setAttribute('aria-pressed', String(learned));
+      check.setAttribute('aria-label', `${i + 1}번 학습 완료`);
+      check.addEventListener('click', () => {
+        toggleLearned(i);
+        const top = els.listSheet.querySelector('.sheet').scrollTop;
+        renderList();
+        els.listSheet.querySelector('.sheet').scrollTop = top;
+      });
+      li.append(btn, check);
       list.append(li);
     });
   }
@@ -366,10 +414,10 @@
       const title = el('span', 'set-title');
       title.append(el('span', 'set-title-text', set.name));
       if (isActive) title.append(el('span', 'badge', '학습 중'));
-      const meta = el('span', 'set-meta', `${sum.total}문장 · 통과 ${sum.passed}`);
+      const meta = el('span', 'set-meta', `${sum.total}문장 · 학습 완료 ${sum.learned}`);
       const bar = el('span', 'mini-progress');
       const fill = el('span', 'mini-progress-bar');
-      fill.style.width = `${(sum.passed / sum.total) * 100}%`;
+      fill.style.width = `${(sum.learned / sum.total) * 100}%`;
       bar.append(fill);
       main.append(title, meta, bar);
       main.addEventListener('click', () => {
@@ -402,7 +450,7 @@
       });
       action('CSV로 저장', () => downloadCsv(set));
       action('기록 초기화', () => {
-        if (!window.confirm(`'${set.name}'의 통과 기록을 지우고 1번 문장부터 다시 할까요?`)) return;
+        if (!window.confirm(`'${set.name}'의 기록(통과·읽은 횟수, 학습 완료 표시)을 모두 지우고 1번 문장부터 다시 할까요?`)) return;
         const next = Sets.resetProgress(state.store, set.id);
         if (isActive) switchStore(next);
         else { state.store = next; saveStore(); }
@@ -528,7 +576,9 @@
     const i = Progress.firstUnpassed(state.progress);
     if (i >= 0) setProgress(Progress.goTo(state.progress, i));
   });
-  els.restartBtn.addEventListener('click', () => setProgress(Progress.fresh(deck().items)));
+  // 새 회차: 누적 통과 횟수·학습 완료 표시는 남긴다 (모두 지우기는 세트 메뉴의 '기록 초기화')
+  els.restartBtn.addEventListener('click', () => setProgress(Progress.newRound(state.progress)));
+  els.learnedBtn.addEventListener('click', () => toggleLearned(state.progress.index));
   els.doneSetsBtn.addEventListener('click', openSets);
 
   els.setBtn.addEventListener('click', openSets);
