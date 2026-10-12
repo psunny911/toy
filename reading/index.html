@@ -12,15 +12,21 @@
 <meta name="description" content="영어 문장을 소리 내어 읽으면 음성 인식으로 채점해서, 80% 이상 맞으면 다음 문장으로 넘어가는 학습 앱." />
 <title>소리 내어 읽기</title>
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="css/style.css?v=4" />
+<link rel="stylesheet" href="css/style.css?v=5" />
 </head>
 <body>
 <div id="app">
   <header class="topbar">
-    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>소리 내어 읽기</h1>
+    <h1 class="brand">
+      <button type="button" class="set-btn" id="set-btn" aria-label="문장 세트 바꾸기">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span class="set-name" id="set-name">소리 내어 읽기</span>
+        <svg class="caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>
+      </button>
+    </h1>
     <div class="top-actions">
       <button type="button" class="text-btn" id="list-btn">목록</button>
-      <button type="button" class="text-btn" id="import-btn">문장 불러오기</button>
+      <button type="button" class="text-btn" id="sets-btn">세트</button>
     </div>
   </header>
 
@@ -29,7 +35,7 @@
   </p>
 
   <div class="progress-row">
-    <button type="button" class="pos-btn" id="pos-btn" aria-label="번호로 이동"><b id="pos">1</b> / <span id="count">0</span> <svg class="pos-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
+    <button type="button" class="pos-btn" id="pos-btn" aria-label="번호로 이동"><b id="pos">1</b> / <span id="count">0</span> <svg class="caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
     <span class="progress-pass" id="pass-count">통과 0</span>
     <button type="button" class="first-btn" id="first-btn" aria-label="첫 문장으로">⏮ 처음으로</button>
@@ -59,6 +65,7 @@
       <div class="done-actions">
         <button type="button" class="primary-btn" id="retry-left-btn">못 넘은 문장 다시</button>
         <button type="button" class="pill" id="restart-btn">처음부터 다시</button>
+        <button type="button" class="pill" id="done-sets-btn">다른 세트 고르기</button>
       </div>
     </section>
   </main>
@@ -83,9 +90,13 @@
 <div class="sheet-backdrop" id="import-sheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="import-title">
     <div class="sheet-head">
-      <h3 id="import-title">문장 불러오기</h3>
+      <h3 id="import-title">새 세트 만들기</h3>
       <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button>
     </div>
+    <label class="field first">
+      <span class="field-label">세트 이름 (비워 두면 파일 이름으로)</span>
+      <input type="text" id="new-set-name" maxlength="40" placeholder="예: 카페 영어" autocomplete="off" />
+    </label>
     <p class="muted small">CSV 한 줄에 한 문장. <b>첫 칸은 영어 문장, 둘째 칸은 뜻</b>이에요. 첫 줄 머리글(english,meaning)은 있어도 되고 없어도 돼요. 쉼표가 들어간 문장은 큰따옴표로 감싸 주세요.</p>
     <pre class="example">english,meaning
 How are you?,잘 지내요?
@@ -99,11 +110,22 @@ How are you?,잘 지내요?
       <textarea id="paste-input" rows="5" placeholder="I like it.,좋아요." autocomplete="off" spellcheck="false"></textarea>
     </label>
     <div class="sheet-actions">
-      <button type="button" class="pill" id="paste-btn">붙여넣은 문장으로 시작</button>
-      <button type="button" class="pill" id="sample-btn">예시 문장으로 시작</button>
+      <button type="button" class="pill" id="paste-btn">붙여넣은 문장으로 만들기</button>
+      <button type="button" class="pill" id="sample-btn">예시 문장으로 만들기</button>
       <a class="pill" href="sample/sentences.csv" download="sentences.csv">예시 CSV 받기</a>
     </div>
-    <p class="muted small">불러오면 지금 목록과 진행 기록이 새 문장으로 바뀌어요.</p>
+    <p class="muted small">새 세트로 추가돼요. 다른 세트의 문장과 진행 기록은 그대로 남아요.</p>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="set-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="set-title">
+    <div class="sheet-head">
+      <h3 id="set-title">문장 세트</h3>
+      <button type="button" class="icon-btn" data-close aria-label="닫기">✕</button>
+    </div>
+    <ul class="set-list" id="set-list"></ul>
+    <button type="button" class="primary-btn wide" id="new-set-btn">+ 새 세트 만들기</button>
   </div>
 </div>
 
@@ -127,12 +149,13 @@ How are you?,잘 지내요?
 
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="js/csv.js?v=4"></script>
-<script src="js/score.js?v=4"></script>
-<script src="js/mask.js?v=4"></script>
-<script src="js/progress.js?v=4"></script>
-<script src="js/samples.js?v=4"></script>
-<script src="js/speech.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/csv.js?v=5"></script>
+<script src="js/score.js?v=5"></script>
+<script src="js/mask.js?v=5"></script>
+<script src="js/progress.js?v=5"></script>
+<script src="js/sets.js?v=5"></script>
+<script src="js/samples.js?v=5"></script>
+<script src="js/speech.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

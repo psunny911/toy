@@ -49,3 +49,13 @@ test('bundled sample sentences match sample/sentences.csv', () => {
   const csv = fs.readFileSync(path.join(__dirname, '../sample/sentences.csv'), 'utf8');
   assert.deepEqual(window.SAMPLE_SENTENCES, C.parseSentences(csv));
 });
+
+test('toCsv round-trips through parseSentences', () => {
+  const items = [
+    { en: 'Well, I said "hi".', ko: '음, "안녕"' },
+    { en: 'Plain', ko: '' },
+  ];
+  const text = C.toCsv(items);
+  assert.ok(text.startsWith('english,meaning\r\n"Well, I said ""hi"".",'));
+  assert.deepEqual(C.parseSentences(text), items);
+});

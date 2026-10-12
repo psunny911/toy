@@ -29,6 +29,8 @@ How are you?,잘 지내요?
 - 쉼표가 들어간 칸은 큰따옴표로 감싼다. 엑셀에서 저장한 EUC-KR(CP949) 파일도 읽는다.
 - 엑셀·구글 시트에서 두 열을 복사해 붙여넣어도 된다(탭 구분).
 - 예시: `sample/sentences.csv`
+- CSV 하나가 **세트** 하나가 된다. 세트는 여러 개 둘 수 있고(상단 세트 이름 또는 `세트`), 세트마다 진행 기록이
+  따로 저장된다. 세트의 `⋯` › `CSV로 저장`으로 문장을 다시 꺼낼 수 있다.
 
 ## 테스트 (Node 내장 러너, 외부 패키지 불필요)
 
@@ -37,7 +39,8 @@ cd reading
 npm test
 ```
 
-`csv.js`(파싱·인코딩), `score.js`(정규화·정렬·정확도), `mask.js`(숨길 단어), `progress.js`(진행 상태)를
+`csv.js`(파싱·인코딩·내보내기), `score.js`(정규화·정렬·정확도), `mask.js`(숨길 단어), `progress.js`(진행 상태),
+`sets.js`(세트 추가·전환·이름·삭제·예전 저장소 옮기기)를
 DOM 없이 검증한다. 화면 흐름은 Chromium에서 음성 인식을 가짜로 바꿔 끼워 확인했다.
 
 ## 구조
@@ -49,10 +52,11 @@ reading/
   icons/icon.svg
   sample/sentences.csv
   js/
-    csv.js          CSV/TSV 파싱, UTF-8 → EUC-KR 대체 디코딩 (순수, UMD)
+    csv.js          CSV/TSV 파싱·내보내기, UTF-8 → EUC-KR 대체 디코딩 (순수, UMD)
     score.js        단어 정규화(축약형·숫자), LCS 정렬, 정확도·단어별 결과 (순수, UMD)
     mask.js         "일부 단어 숨기기"에서 숨길 단어 고르기 (순수, UMD)
     progress.js     현재 문장·통과 여부·시도 횟수 (순수, UMD)
+    sets.js         문장 세트 모음, 세트별 진행 (순수, UMD, progress.js 사용)
     samples.js      처음 열었을 때 쓰는 예시 문장 (sample/sentences.csv와 같은 내용)
     speech.js       SpeechRecognition / speechSynthesis 래퍼
     app.js          화면·흐름 (DOM 의존)

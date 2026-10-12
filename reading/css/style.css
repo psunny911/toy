@@ -102,9 +102,44 @@ button:disabled {
   font-weight: 800;
   letter-spacing: -0.02em;
   white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.set-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-left: -8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.set-btn:active {
+  background: var(--surface-2);
+}
+
+.set-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.set-btn .caret {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
 }
 
 .brand-dot {
+  flex: none;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -112,6 +147,7 @@ button:disabled {
 }
 
 .top-actions {
+  flex: none;
   display: flex;
   gap: 2px;
 }
@@ -172,7 +208,7 @@ button:disabled {
   background: var(--surface-2);
 }
 
-.pos-caret {
+.caret {
   width: 12px;
   height: 12px;
   vertical-align: -1px;
@@ -666,6 +702,124 @@ button:disabled {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.set-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.set-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.set-row-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.set-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+}
+
+.set-row.current .set-main {
+  background: var(--surface-2);
+}
+
+.set-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.set-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.set-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mini-progress {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.mini-progress-bar {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+
+.more-btn {
+  flex: none;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 8px 12px;
+}
+
+.small-pill {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.pill.danger {
+  color: var(--miss);
+  border-color: var(--miss-bg);
+}
+
+.wide {
+  width: 100%;
+}
+
+.field.first {
+  margin: 4px 0 12px;
+}
+
+.field input[type="text"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 16px;
 }
 
 .sentence-list {

@@ -1,10 +1,11 @@
-// 화면·음성 인식 흐름 (DOM 의존). 채점은 score.js, 숨길 단어는 mask.js, 진행 상태는 progress.js.
+// 화면·음성 인식 흐름 (DOM 의존). 채점은 score.js, 숨길 단어는 mask.js, 진행 상태는 progress.js,
+// 세트 모음은 sets.js.
 (function () {
-  const { Csv, Score, Mask, Progress, Speech } = window;
+  const { Csv, Score, Mask, Progress, Sets, Speech } = window;
   const $ = (id) => document.getElementById(id);
 
   const els = {
-    listBtn: $('list-btn'), importBtn: $('import-btn'), unsupported: $('unsupported'),
+    listBtn: $('list-btn'), setsBtn: $('sets-btn'), setBtn: $('set-btn'), setName: $('set-name'), unsupported: $('unsupported'),
     pos: $('pos'), count: $('count'), progressBar: $('progress-bar'), passCount: $('pass-count'),
     modeSeg: $('mode-seg'), study: $('study'), meaning: $('meaning'), sentence: $('sentence'),
     speakBtn: $('speak-btn'), peekBtn: $('peek-btn'), shuffleBtn: $('shuffle-btn'),
@@ -12,14 +13,18 @@
     feedback: $('feedback'), score: $('score'), resultMsg: $('result-msg'), heard: $('heard'),
     firstBtn: $('first-btn'), prevBtn: $('prev-btn'), micBtn: $('mic-btn'), nextBtn: $('next-btn'),
     importSheet: $('import-sheet'), fileInput: $('file-input'), pasteInput: $('paste-input'),
-    pasteBtn: $('paste-btn'), sampleBtn: $('sample-btn'),
+    pasteBtn: $('paste-btn'), sampleBtn: $('sample-btn'), newSetName: $('new-set-name'),
+    setSheet: $('set-sheet'), setList: $('set-list'), newSetBtn: $('new-set-btn'), doneSetsBtn: $('done-sets-btn'),
     listSheet: $('list-sheet'), listName: $('list-name'), sentenceList: $('sentence-list'),
     posBtn: $('pos-btn'), jumpInput: $('jump-input'), jumpTotal: $('jump-total'), jumpBtn: $('jump-btn'),
     toast: $('toast'),
   };
 
-  const DECK_KEY = 'reading.deck.v1';
-  const PROGRESS_KEY = 'reading.progress.v1';
+  const SETS_KEY = 'reading.sets.v1';
+  // 세트 기능 이전의 단일 목록 저장소 (처음 한 번 첫 세트로 옮긴다)
+  const LEGACY_DECK_KEY = 'reading.deck.v1';
+  const LEGACY_PROGRESS_KEY = 'reading.progress.v1';
+  const SAMPLE_NAME = '예시 문장';
   const PREFS_KEY = 'reading.prefs.v1';
   const ADVANCE_DELAY_MS = 1600;
   const IDLE_MSG = '마이크를 누르고 문장을 소리 내어 읽어 보세요.';
@@ -32,10 +37,9 @@
     'language-not-supported': '이 기기에서 영어 음성 인식을 쓸 수 없어요.',
   };
 
-  const deck = readJSON(DECK_KEY);
   const state = {
-    deck: deck && Array.isArray(deck.items) && deck.items.length ? deck : { name: '예시 문장', items: window.SAMPLE_SENTENCES },
-    progress: null,
+    store: null, // Sets store — 세트 목록과 세트별 진행
+    progress: null, // 현재 세트의 진행 (store에도 같이 저장)
     mode: Progress.normalizeMode((readJSON(PREFS_KEY) || {}).mode),
     // 지금 문장에서만 유지되는 상태
     salt: 0, // '다른 단어 숨기기'를 누를 때마다 +1
@@ -46,8 +50,20 @@
     heard: '',
     listening: null, // Speech.listen 핸들
     advanceTimer: null,
+    warnedFull: false, // 저장 공간 부족 안내는 한 번만
+    openSetMenu: null, // 세트 시트에서 ⋯ 메뉴가 열린 세트 id
   };
-  state.progress = Progress.normalize(readJSON(PROGRESS_KEY), state.deck.items);
+  state.store = Sets.normalize(readJSON(SETS_KEY), {
+    legacyDeck: readJSON(LEGACY_DECK_KEY),
+    legacyProgress: readJSON(LEGACY_PROGRESS_KEY),
+    sample: { name: SAMPLE_NAME, items: window.SAMPLE_SENTENCES },
+    makeId: uid,
+    now: Date.now(),
+  });
+  state.progress = deck().progress;
+  if (saveStore()) {
+    try { localStorage.removeItem(LEGACY_DECK_KEY); localStorage.removeItem(LEGACY_PROGRESS_KEY); } catch (e) { /* 무시 */ }
+  }
 
   // ---------- 공통 ----------
 
@@ -56,10 +72,32 @@
   }
 
   function writeJSON(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 저장 실패해도 학습은 계속 */ }
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (e) { return false; }
   }
 
-  function saveProgress() { writeJSON(PROGRESS_KEY, state.progress); }
+  function saveStore() {
+    const ok = writeJSON(SETS_KEY, state.store);
+    if (!ok && !state.warnedFull) {
+      state.warnedFull = true;
+      // 첫 저장은 화면 준비 전일 수 있어 다음 틱에 알린다
+      setTimeout(() => toast('저장 공간이 부족해서 기록을 저장하지 못했어요. 안 쓰는 세트를 지워 주세요.'), 0);
+    }
+    return ok;
+  }
+
+  function saveProgress() {
+    state.store = Sets.saveProgress(state.store, state.store.activeId, state.progress);
+    saveStore();
+  }
+
+  /** 지금 공부 중인 세트 */
+  function deck() {
+    return Sets.active(state.store);
+  }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
 
   let toastTimer = null;
   function toast(msg) {
@@ -70,7 +108,7 @@
   }
 
   function currentItem() {
-    return state.deck.items[state.progress.index];
+    return deck().items[state.progress.index];
   }
 
   function el(tag, className, text) {
@@ -105,17 +143,27 @@
   function goNext() { setProgress(Progress.advance(state.progress)); }
   function goPrev() { if (state.progress.index > 0) setProgress(Progress.goTo(state.progress, state.progress.index - 1)); }
 
-  function loadDeck(items, name) {
-    if (!items.length) {
+  /** 새 세트로 추가하고 그 세트로 바꾼다. 이름 칸을 비워 두면 fallbackName. */
+  function createSet(items, fallbackName) {
+    const next = Sets.add(state.store, els.newSetName.value.trim() || fallbackName, items, uid(), Date.now());
+    if (!next) {
       toast('읽을 영어 문장을 찾지 못했어요. 첫 칸에 영어 문장을 넣어 주세요.');
       return false;
     }
-    state.deck = { name, items };
-    writeJSON(DECK_KEY, state.deck);
+    els.newSetName.value = '';
     closeSheet(els.importSheet);
-    setProgress(Progress.fresh(items));
-    toast(`${items.length}문장을 불러왔어요.`);
+    switchStore(next);
+    toast(`'${deck().name}' 세트를 만들었어요 · ${items.length}문장`);
     return true;
+  }
+
+  /** 세트 목록을 바꾸고 현재 세트의 진행으로 화면을 다시 그린다 */
+  function switchStore(next) {
+    state.store = next;
+    saveStore();
+    state.progress = deck().progress;
+    resetSentenceState();
+    render();
   }
 
   // ---------- 음성 인식 ----------
@@ -168,7 +216,7 @@
     state.progress = Progress.record(state.progress, index, result.passed);
     saveProgress();
     if (result.passed) {
-      state.message = index + 1 < state.deck.items.length ? '통과! 다음 문장으로 넘어가요.' : '통과! 마지막 문장이에요.';
+      state.message = index + 1 < deck().items.length ? '통과! 다음 문장으로 넘어가요.' : '통과! 마지막 문장이에요.';
       state.advanceTimer = setTimeout(goNext, ADVANCE_DELAY_MS);
     } else {
       const missed = result.total - result.matched;
@@ -180,8 +228,9 @@
   // ---------- 그리기 ----------
 
   function render() {
-    const { items } = state.deck;
+    const { items } = deck();
     const p = state.progress;
+    els.setName.textContent = deck().name;
     const sum = Progress.summary(p);
 
     els.pos.textContent = String(p.index + 1);
@@ -278,8 +327,8 @@
   function renderList() {
     const list = els.sentenceList;
     list.replaceChildren();
-    els.listName.textContent = `· ${state.deck.name}`;
-    state.deck.items.forEach((item, i) => {
+    els.listName.textContent = `· ${deck().name}`;
+    deck().items.forEach((item, i) => {
       const li = el('li');
       const btn = el('button', 'list-item');
       btn.type = 'button';
@@ -303,9 +352,106 @@
     });
   }
 
+  function renderSets() {
+    const list = els.setList;
+    list.replaceChildren();
+    state.store.sets.forEach((set) => {
+      const isActive = set.id === state.store.activeId;
+      // 현재 세트는 메모리의 최신 진행을 보여 준다
+      const sum = Progress.summary(isActive ? state.progress : set.progress);
+      const li = el('li', 'set-row' + (isActive ? ' current' : ''));
+
+      const main = el('button', 'set-main');
+      main.type = 'button';
+      const title = el('span', 'set-title');
+      title.append(el('span', 'set-title-text', set.name));
+      if (isActive) title.append(el('span', 'badge', '학습 중'));
+      const meta = el('span', 'set-meta', `${sum.total}문장 · 통과 ${sum.passed}`);
+      const bar = el('span', 'mini-progress');
+      const fill = el('span', 'mini-progress-bar');
+      fill.style.width = `${(sum.passed / sum.total) * 100}%`;
+      bar.append(fill);
+      main.append(title, meta, bar);
+      main.addEventListener('click', () => {
+        closeSheet(els.setSheet);
+        if (!isActive) switchStore(Sets.setActive(state.store, set.id));
+      });
+
+      const more = el('button', 'icon-btn more-btn', '⋯');
+      more.type = 'button';
+      more.setAttribute('aria-label', `${set.name} 관리`);
+      more.setAttribute('aria-expanded', 'false');
+
+      const actions = el('div', 'set-actions');
+      // 이름 바꾸기 등으로 목록을 다시 그려도 열어 둔 메뉴는 그대로
+      actions.hidden = state.openSetMenu !== set.id;
+      more.setAttribute('aria-expanded', String(!actions.hidden));
+      const action = (label, fn, cls) => {
+        const b = el('button', 'pill small-pill' + (cls ? ' ' + cls : ''), label);
+        b.type = 'button';
+        b.addEventListener('click', fn);
+        actions.append(b);
+      };
+      action('이름 바꾸기', () => {
+        const name = window.prompt('세트 이름', set.name);
+        if (name == null || !name.trim()) return;
+        state.store = Sets.rename(state.store, set.id, name);
+        saveStore();
+        render();
+        renderSets();
+      });
+      action('CSV로 저장', () => downloadCsv(set));
+      action('기록 초기화', () => {
+        if (!window.confirm(`'${set.name}'의 통과 기록을 지우고 1번 문장부터 다시 할까요?`)) return;
+        const next = Sets.resetProgress(state.store, set.id);
+        if (isActive) switchStore(next);
+        else { state.store = next; saveStore(); }
+        renderSets();
+      });
+      action('삭제', () => {
+        const next = Sets.remove(state.store, set.id);
+        if (!next) { toast('세트가 하나뿐이라 지울 수 없어요. 새 세트를 먼저 만들어 주세요.'); return; }
+        if (!window.confirm(`'${set.name}' 세트를 지울까요? 문장과 기록이 모두 사라져요.`)) return;
+        if (isActive) switchStore(next);
+        else { state.store = next; saveStore(); }
+        renderSets();
+        toast(`'${set.name}' 세트를 지웠어요.`);
+      }, 'danger');
+
+      more.addEventListener('click', () => {
+        state.openSetMenu = actions.hidden ? set.id : null;
+        renderSets();
+      });
+
+      const top = el('div', 'set-row-top');
+      top.append(main, more);
+      li.append(top, actions);
+      list.append(li);
+    });
+  }
+
+  function openSets() {
+    state.openSetMenu = null;
+    renderSets();
+    openSheet(els.setSheet);
+  }
+
+  function downloadCsv(set) {
+    // 엑셀에서 한글이 깨지지 않게 BOM을 붙인다
+    const blob = new Blob(['﻿' + Csv.toCsv(set.items)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${set.name.replace(/[\\/:*?"<>|]+/g, '_')}.csv`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   function openList(focusJump) {
     renderList();
-    const n = state.deck.items.length;
+    const n = deck().items.length;
     els.jumpInput.max = String(n);
     els.jumpInput.value = '';
     els.jumpInput.placeholder = `1~${n}`;
@@ -318,7 +464,7 @@
   }
 
   function jumpToNumber() {
-    const n = state.deck.items.length;
+    const n = deck().items.length;
     const num = Number(els.jumpInput.value);
     if (!Number.isInteger(num) || num < 1 || num > n) {
       toast(`1~${n} 사이 번호를 넣어 주세요.`);
@@ -340,7 +486,8 @@
     sheet.hidden = true;
   }
 
-  [els.importSheet, els.listSheet].forEach((sheet) => {
+  const SHEETS = [els.importSheet, els.listSheet, els.setSheet];
+  SHEETS.forEach((sheet) => {
     sheet.addEventListener('click', (e) => {
       if (e.target === sheet || e.target.closest('[data-close]')) closeSheet(sheet);
     });
@@ -381,9 +528,15 @@
     const i = Progress.firstUnpassed(state.progress);
     if (i >= 0) setProgress(Progress.goTo(state.progress, i));
   });
-  els.restartBtn.addEventListener('click', () => setProgress(Progress.fresh(state.deck.items)));
+  els.restartBtn.addEventListener('click', () => setProgress(Progress.fresh(deck().items)));
+  els.doneSetsBtn.addEventListener('click', openSets);
 
-  els.importBtn.addEventListener('click', () => openSheet(els.importSheet));
+  els.setBtn.addEventListener('click', openSets);
+  els.setsBtn.addEventListener('click', openSets);
+  els.newSetBtn.addEventListener('click', () => {
+    closeSheet(els.setSheet);
+    openSheet(els.importSheet);
+  });
   els.listBtn.addEventListener('click', () => openList(false));
   els.posBtn.addEventListener('click', () => openList(true));
   els.jumpBtn.addEventListener('click', jumpToNumber);
@@ -397,20 +550,20 @@
     if (!file) return;
     try {
       const text = Csv.decodeBytes(await file.arrayBuffer());
-      loadDeck(Csv.parseSentences(text), file.name.replace(/\.(csv|tsv|txt)$/i, ''));
+      createSet(Csv.parseSentences(text), file.name.replace(/\.(csv|tsv|txt)$/i, ''));
     } catch (e) {
       toast('파일을 읽지 못했어요.');
     }
   });
   els.pasteBtn.addEventListener('click', () => {
-    if (loadDeck(Csv.parseSentences(els.pasteInput.value), '붙여넣은 문장')) els.pasteInput.value = '';
+    if (createSet(Csv.parseSentences(els.pasteInput.value), '붙여넣은 문장')) els.pasteInput.value = '';
   });
-  els.sampleBtn.addEventListener('click', () => loadDeck(window.SAMPLE_SENTENCES, '예시 문장'));
+  els.sampleBtn.addEventListener('click', () => createSet(window.SAMPLE_SENTENCES, SAMPLE_NAME));
 
   // PC: 스페이스바로 마이크, ←/→로 이동, Esc로 시트 닫기
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closeSheet(els.importSheet); closeSheet(els.listSheet); return; }
-    if (!els.importSheet.hidden || !els.listSheet.hidden) return;
+    if (e.key === 'Escape') { SHEETS.forEach(closeSheet); return; }
+    if (SHEETS.some((sheet) => !sheet.hidden)) return;
     if (e.target.closest('input, textarea, button, [role="radio"]') && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     if (e.key === ' ' && !els.micBtn.disabled) { e.preventDefault(); els.micBtn.click(); }
     else if (e.key === 'ArrowRight' && !els.nextBtn.disabled) goNext();

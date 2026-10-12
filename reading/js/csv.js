@@ -79,5 +79,14 @@
     }
   }
 
-  return { detectDelimiter, parseRows, parseSentences, decodeBytes };
+  /** [{ en, ko }] → CSV 텍스트 (머리글 포함). 쉼표·따옴표·줄바꿈이 있는 칸은 따옴표로 감싼다. */
+  function toCsv(items) {
+    const cell = (v) => {
+      const t = String(v == null ? '' : v);
+      return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    };
+    return ['english,meaning'].concat(items.map((it) => cell(it.en) + ',' + cell(it.ko))).join('\r\n') + '\r\n';
+  }
+
+  return { detectDelimiter, parseRows, parseSentences, decodeBytes, toCsv };
 });
