@@ -85,15 +85,47 @@
     return { ...p, learned };
   }
 
-  /** 새 회차: 1번 문장부터, 이번 회차 통과 표시만 지운다. 누적 기록은 그대로. */
-  function newRound(p) {
-    return { ...p, index: 0, done: false, passed: p.passed.map(() => false) };
+  /** 새 회차: 첫 문장부터, 이번 회차 통과 표시만 지운다. 누적 기록은 그대로.
+   *  건너뛸 문장만 남으면 바로 done. */
+  function newRound(p, skipLearned) {
+    const next = { ...p, index: 0, done: false, passed: p.passed.map(() => false) };
+    const i = firstIndex(next, skipLearned);
+    return i < 0 ? { ...next, done: true } : { ...next, index: i };
   }
 
-  /** 다음 문장으로. 마지막 문장 다음이면 done. */
-  function advance(p) {
-    if (p.index + 1 >= p.passed.length) return { ...p, done: true };
-    return { ...p, index: p.index + 1, done: false };
+  // 아래 이동 함수의 skipLearned가 true면 학습 완료 문장은 건너뛴다.
+
+  function skipper(p, skipLearned) {
+    return (i) => !!skipLearned && isLearned(p, i);
+  }
+
+  /** from부터 step 방향으로 건너뛰지 않는 첫 문장 (없으면 -1) */
+  function seek(p, from, step, skipLearned) {
+    const skip = skipper(p, skipLearned);
+    for (let i = from; i >= 0 && i < p.passed.length; i += step) if (!skip(i)) return i;
+    return -1;
+  }
+
+  /** 다음 문장으로. 더 없으면 done. */
+  function advance(p, skipLearned) {
+    const i = seek(p, p.index + 1, 1, skipLearned);
+    return i < 0 ? { ...p, done: true } : { ...p, index: i, done: false };
+  }
+
+  /** 이전 문장 번호 (없으면 -1) */
+  function prevIndex(p, skipLearned) {
+    return seek(p, p.index - 1, -1, skipLearned);
+  }
+
+  /** 첫 문장 번호 (모두 건너뛰면 -1) */
+  function firstIndex(p, skipLearned) {
+    return seek(p, 0, 1, skipLearned);
+  }
+
+  /** 건너뛰지 않는 문장 수 */
+  function activeCount(p, skipLearned) {
+    const skip = skipper(p, skipLearned);
+    return p.passed.filter((_, i) => !skip(i)).length;
   }
 
   function goTo(p, index) {
@@ -101,8 +133,9 @@
   }
 
   /** 아직 통과 못 한 첫 문장 (없으면 -1) */
-  function firstUnpassed(p) {
-    return p.passed.indexOf(false);
+  function firstUnpassed(p, skipLearned) {
+    const skip = skipper(p, skipLearned);
+    return p.passed.findIndex((ok, i) => !ok && !skip(i));
   }
 
   function summary(p) {
@@ -119,6 +152,6 @@
 
   return {
     MODES, AUTO_LEARN_PASSES, deckId, fresh, normalize, record, isLearned, learnedSource, toggleLearned,
-    newRound, advance, goTo, firstUnpassed, summary, normalizeMode,
+    newRound, advance, prevIndex, firstIndex, activeCount, goTo, firstUnpassed, summary, normalizeMode,
   };
 });

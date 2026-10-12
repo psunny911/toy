@@ -12,6 +12,7 @@
     done: $('done'), doneStats: $('done-stats'), retryLeftBtn: $('retry-left-btn'), restartBtn: $('restart-btn'),
     feedback: $('feedback'), score: $('score'), resultMsg: $('result-msg'), heard: $('heard'),
     statText: $('stat-text'), learnedBtn: $('learned-btn'), learnedTag: $('learned-tag'), listSummary: $('list-summary'),
+    skipLearned: $('skip-learned'), skipCount: $('skip-count'),
     firstBtn: $('first-btn'), prevBtn: $('prev-btn'), micBtn: $('mic-btn'), nextBtn: $('next-btn'),
     importSheet: $('import-sheet'), fileInput: $('file-input'), pasteInput: $('paste-input'),
     pasteBtn: $('paste-btn'), sampleBtn: $('sample-btn'), newSetName: $('new-set-name'),
@@ -42,6 +43,8 @@
     store: null, // Sets store — 세트 목록과 세트별 진행
     progress: null, // 현재 세트의 진행 (store에도 같이 저장)
     mode: Progress.normalizeMode((readJSON(PREFS_KEY) || {}).mode),
+    // 학습 완료 문장 건너뛰기 (기본 켬)
+    skipLearned: (readJSON(PREFS_KEY) || {}).skipLearned !== false,
     // 지금 문장에서만 유지되는 상태
     salt: 0, // '다른 단어 숨기기'를 누를 때마다 +1
     revealed: new Set(), // 맞게 읽어서 드러난 단어
@@ -141,8 +144,20 @@
     render();
   }
 
-  function goNext() { setProgress(Progress.advance(state.progress)); }
-  function goPrev() { if (state.progress.index > 0) setProgress(Progress.goTo(state.progress, state.progress.index - 1)); }
+  function goNext() { setProgress(Progress.advance(state.progress, state.skipLearned)); }
+  function goPrev() {
+    const i = Progress.prevIndex(state.progress, state.skipLearned);
+    if (i >= 0) setProgress(Progress.goTo(state.progress, i));
+  }
+  function goFirst() {
+    const i = Progress.firstIndex(state.progress, state.skipLearned);
+    if (i >= 0) setProgress(Progress.goTo(state.progress, i));
+    else toast('모든 문장이 학습 완료예요. 건너뛰기를 끄면 다시 볼 수 있어요.');
+  }
+
+  function savePrefs() {
+    writeJSON(PREFS_KEY, { mode: state.mode, skipLearned: state.skipLearned });
+  }
 
   /** 새 세트로 추가하고 그 세트로 바꾼다. 이름 칸을 비워 두면 fallbackName. */
   function createSet(items, fallbackName) {
@@ -250,13 +265,19 @@
     els.done.hidden = !p.done;
     els.feedback.hidden = p.done;
     els.micBtn.disabled = !Speech.supported || p.done;
-    els.prevBtn.disabled = p.index === 0 && !p.done;
-    els.firstBtn.disabled = p.index === 0 && !p.done;
+    const first = Progress.firstIndex(p, state.skipLearned);
+    els.prevBtn.disabled = !p.done && Progress.prevIndex(p, state.skipLearned) < 0;
+    els.firstBtn.disabled = !p.done && (first < 0 || first === p.index);
+    els.skipLearned.checked = state.skipLearned;
+    els.skipCount.textContent = sum.learned ? `(${sum.learned}문장)` : '';
     els.nextBtn.disabled = p.done;
 
     if (p.done) {
-      els.doneStats.textContent = `이번 회차 ${sum.total}문장 중 ${sum.passed}문장 통과 · 학습 완료 ${sum.learned}문장`;
-      els.retryLeftBtn.hidden = sum.passed === sum.total;
+      els.doneStats.textContent = state.skipLearned && !Progress.activeCount(p, true)
+        ? `${sum.total}문장 모두 학습 완료했어요! 다시 보려면 '학습 완료한 문장 건너뛰기'를 꺼 주세요.`
+        : `이번 회차 ${sum.total}문장 중 ${sum.passed}문장 통과 · 학습 완료 ${sum.learned}문장`
+          + (state.skipLearned && sum.learned ? ' (건너뜀)' : '');
+      els.retryLeftBtn.hidden = Progress.firstUnpassed(p, state.skipLearned) < 0;
       els.micBtn.classList.remove('listening');
       return;
     }
@@ -363,6 +384,7 @@
     els.listSummary.textContent = `완료 ${sum.learned}/${sum.total}`;
     deck().items.forEach((item, i) => {
       const li = el('li', 'list-row');
+      if (state.skipLearned && Progress.isLearned(state.progress, i)) li.classList.add('skipped');
       const btn = el('button', 'list-item');
       btn.type = 'button';
       if (i === state.progress.index && !state.progress.done) btn.classList.add('current');
@@ -553,14 +575,23 @@
   });
   els.nextBtn.addEventListener('click', goNext);
   // 통과 기록은 그대로 두고 첫 문장으로만 이동 (기록까지 지우는 건 완료 화면의 '처음부터 다시')
-  els.firstBtn.addEventListener('click', () => setProgress(Progress.goTo(state.progress, 0)));
+  els.firstBtn.addEventListener('click', goFirst);
+  els.skipLearned.addEventListener('change', () => {
+    state.skipLearned = els.skipLearned.checked;
+    savePrefs();
+    const n = Progress.summary(state.progress).learned;
+    toast(state.skipLearned
+      ? (n ? `학습 완료한 ${n}문장을 건너뛰어요.` : '학습 완료한 문장이 생기면 건너뛰어요.')
+      : '학습 완료한 문장도 다시 보여 줘요.');
+    render();
+  });
 
   els.modeSeg.addEventListener('click', (e) => {
     const b = e.target.closest('[role="radio"]');
     if (!b) return;
     state.mode = Progress.normalizeMode(b.dataset.value);
     state.peek = false;
-    writeJSON(PREFS_KEY, { mode: state.mode });
+    savePrefs();
     render();
   });
 
@@ -573,11 +604,15 @@
   els.shuffleBtn.addEventListener('click', () => { state.salt += 1; render(); });
 
   els.retryLeftBtn.addEventListener('click', () => {
-    const i = Progress.firstUnpassed(state.progress);
+    const i = Progress.firstUnpassed(state.progress, state.skipLearned);
     if (i >= 0) setProgress(Progress.goTo(state.progress, i));
   });
   // 새 회차: 누적 통과 횟수·학습 완료 표시는 남긴다 (모두 지우기는 세트 메뉴의 '기록 초기화')
-  els.restartBtn.addEventListener('click', () => setProgress(Progress.newRound(state.progress)));
+  els.restartBtn.addEventListener('click', () => {
+    const next = Progress.newRound(state.progress, state.skipLearned);
+    setProgress(next);
+    if (next.done) toast('모든 문장이 학습 완료예요. 건너뛰기를 끄면 다시 볼 수 있어요.');
+  });
   els.learnedBtn.addEventListener('click', () => toggleLearned(state.progress.index));
   els.doneSetsBtn.addEventListener('click', openSets);
 
@@ -625,4 +660,6 @@
 
   els.unsupported.hidden = Speech.supported;
   render();
+  // 처음 그릴 때는 스위치가 미끄러지는 애니메이션 없이
+  requestAnimationFrame(() => document.body.classList.add('ready'));
 })();

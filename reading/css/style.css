@@ -281,6 +281,58 @@ button:disabled {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
+/* ---------- 학습 완료 건너뛰기 ---------- */
+
+.skip-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 2px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--blank);
+  cursor: pointer;
+}
+
+.ready .switch {
+  transition: background 0.2s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.ready .switch::after {
+  transition: transform 0.2s;
+}
+
+.switch:checked {
+  background: var(--ok);
+}
+
+.switch:checked::after {
+  transform: translateX(16px);
+}
+
 /* ---------- 카드 ---------- */
 
 .card {
@@ -910,6 +962,10 @@ button:disabled {
   border: 2px solid var(--blank);
   border-radius: 50%;
   background: none;
+}
+
+.list-row.skipped .list-item {
+  opacity: 0.55;
 }
 
 .sentence-list {

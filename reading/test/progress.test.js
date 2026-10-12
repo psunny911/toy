@@ -99,3 +99,39 @@ test('old saved progress without counts is upgraded', () => {
   assert.deepEqual(kept.passes, [1, 0, 1]);
   assert.deepEqual(kept.learned, [null, true, null]);
 });
+
+test('skipping learned sentences when moving around', () => {
+  const five = [1, 2, 3, 4, 5].map((k) => ({ en: `S${k}.`, ko: '' }));
+  let p = P.fresh(five);
+  p = P.toggleLearned(p, 1); // 2번 완료
+  p = P.toggleLearned(p, 3); // 4번 완료
+  // 건너뛰기 끔: 그대로
+  assert.equal(P.advance(p).index, 1);
+  assert.equal(P.activeCount(p, false), 5);
+  // 건너뛰기 켬
+  assert.equal(P.activeCount(p, true), 3);
+  p = P.advance(p, true);
+  assert.equal(p.index, 2);
+  p = P.advance(p, true);
+  assert.equal(p.index, 4);
+  assert.equal(P.prevIndex(p, true), 2);
+  assert.equal(P.prevIndex(p, false), 3);
+  assert.equal(P.advance(p, true).done, true);
+  p = P.toggleLearned(p, 0);
+  assert.equal(P.firstIndex(p, true), 2);
+  assert.equal(P.firstIndex(p, false), 0);
+  assert.equal(P.prevIndex(P.goTo(p, 2), true), -1);
+});
+
+test('new round and retry respect skipping', () => {
+  let p = P.fresh(items);
+  p = P.toggleLearned(p, 0);
+  assert.equal(P.newRound(p, true).index, 1);
+  assert.equal(P.newRound(p, false).index, 0);
+  assert.equal(P.firstUnpassed(p, true), 1);
+  assert.equal(P.firstUnpassed(p), 0);
+  p = P.toggleLearned(P.toggleLearned(p, 1), 2);
+  const r = P.newRound(p, true);
+  assert.equal(r.done, true, 'everything learned → nothing left to read');
+  assert.equal(P.firstUnpassed(p, true), -1);
+});
