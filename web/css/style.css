@@ -255,11 +255,13 @@ body {
 
 .actions button {
   flex: 1;
-  padding: 12px;
+  padding: 12px 6px;
   border-radius: 8px;
   border: 1px solid #d4d4d8;
   background: #fff;
   font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .actions button.primary {

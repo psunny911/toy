@@ -46,6 +46,7 @@
   const cornerSlider = document.getElementById('corner-slider');
   const reselectButton = document.getElementById('reselect-button');
   const saveButton = document.getElementById('save-button');
+  const saveDeviceButton = document.getElementById('save-device-button');
   const saveStatus = document.getElementById('save-status');
   const optionsToggle = document.getElementById('options-toggle');
   const detailPanel = document.getElementById('detail-panel');
@@ -421,9 +422,25 @@
     render();
   });
 
+  function renderToBlob() {
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  /** Blob을 기기 다운로드 폴더로 직접 저장한다 (공유 시트를 거치지 않는 확정적인 경로) */
+  function downloadBlob(blob) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'collage.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   async function onSave() {
     setSaveStatus('저장 중...');
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    const blob = await renderToBlob();
     if (!blob) {
       setSaveStatus('저장에 실패했습니다.');
       return;
@@ -444,16 +461,22 @@
       }
     }
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'collage.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadBlob(blob);
     setSaveStatus('다운로드 폴더에 저장했습니다.');
   }
 
+  /** 공유 시트를 거치지 않고 기기에 바로 저장 (항상 다운로드 경로만 사용) */
+  async function onSaveToDevice() {
+    setSaveStatus('기기에 저장 중...');
+    const blob = await renderToBlob();
+    if (!blob) {
+      setSaveStatus('저장에 실패했습니다.');
+      return;
+    }
+    downloadBlob(blob);
+    setSaveStatus('기기 다운로드 폴더에 저장했습니다.');
+  }
+
   saveButton.addEventListener('click', onSave);
+  saveDeviceButton.addEventListener('click', onSaveToDevice);
 })();
