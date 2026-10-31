@@ -426,12 +426,22 @@
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }
 
+  /** 저장마다 고유한 파일명을 만든다 (매번 "collage.png"로 고정하면 덮어쓰기/충돌이 생김) */
+  function generateFilename() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const stamp =
+      `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+      `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    return `c_${stamp}.png`;
+  }
+
   /** Blob을 기기 다운로드 폴더로 직접 저장한다 (공유 시트를 거치지 않는 확정적인 경로) */
-  function downloadBlob(blob) {
+  function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'collage.png';
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -446,7 +456,8 @@
       return;
     }
 
-    const file = new File([blob], 'collage.png', { type: 'image/png' });
+    const filename = generateFilename();
+    const file = new File([blob], filename, { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file] });
@@ -461,7 +472,7 @@
       }
     }
 
-    downloadBlob(blob);
+    downloadBlob(blob, filename);
     setSaveStatus('다운로드 폴더에 저장했습니다.');
   }
 
@@ -473,7 +484,7 @@
       setSaveStatus('저장에 실패했습니다.');
       return;
     }
-    downloadBlob(blob);
+    downloadBlob(blob, generateFilename());
     setSaveStatus('기기 다운로드 폴더에 저장했습니다.');
   }
 
