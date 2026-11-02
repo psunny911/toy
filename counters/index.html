@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none';"
+/>
+<meta name="theme-color" content="#B5E5CF" />
+<meta name="description" content="항목별로 숫자를 세고 스테퍼로 올리고 내리는 카운터" />
+<title>카운터</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/style.css?v=1" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>카운터</h1>
+    <div class="topbar-actions">
+      <button type="button" class="icon-btn" id="settings-btn" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+      <button type="button" class="icon-btn primary" id="add-btn" aria-label="항목 추가">＋</button>
+    </div>
+  </header>
+
+  <p class="summary" id="summary" aria-live="polite"></p>
+
+  <main>
+    <ul id="list" class="list"></ul>
+    <div id="empty" class="empty" hidden>
+      <p class="empty-title">아직 항목이 없어요</p>
+      <p class="muted">＋ 버튼으로 셀 항목을 추가하세요.</p>
+      <div id="preset-chips" class="chip-row center"></div>
+    </div>
+  </main>
+</div>
+
+<dialog id="editor-dialog" class="sheet" aria-labelledby="editor-title">
+  <form id="editor-form" method="dialog" novalidate>
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <h2 id="editor-title">항목 추가</h2>
+
+    <div class="field-row">
+      <label class="field emoji-field">
+        <span class="field-label">아이콘</span>
+        <input id="f-emoji" name="emoji" maxlength="8" autocomplete="off" placeholder="🙂" />
+      </label>
+      <label class="field grow">
+        <span class="field-label">이름</span>
+        <input id="f-name" name="name" maxlength="30" placeholder="예: 물 마시기" autocomplete="off" required />
+      </label>
+    </div>
+
+    <div class="field">
+      <span class="field-label">색상</span>
+      <div id="color-swatches" class="swatches" role="radiogroup" aria-label="색상"></div>
+    </div>
+
+    <div class="field-row">
+      <label class="field grow">
+        <span class="field-label">스테퍼 단위 (한 번에 ±)</span>
+        <input id="f-step" name="step" type="number" inputmode="numeric" min="1" max="1000" value="1" />
+      </label>
+      <label class="field grow">
+        <span class="field-label">현재 값</span>
+        <input id="f-value" name="value" type="number" inputmode="numeric" min="0" value="0" />
+      </label>
+    </div>
+
+    <div id="edit-tools" class="edit-tools" hidden>
+      <button type="button" class="btn ghost small" id="move-up-btn">▲ 위로</button>
+      <button type="button" class="btn ghost small" id="move-down-btn">▼ 아래로</button>
+      <button type="button" class="btn ghost small" id="reset-btn">0으로</button>
+    </div>
+
+    <p id="editor-error" class="error" role="alert"></p>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn danger ghost" id="delete-btn" hidden>삭제</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="cancel-btn">취소</button>
+      <button type="submit" class="btn primary" id="save-btn">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings-dialog" class="sheet" aria-labelledby="settings-title">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <h2 id="settings-title">설정</h2>
+  <h3>모두 초기화</h3>
+  <p class="hint">항목은 그대로 두고 모든 카운트를 0으로 되돌려요.</p>
+  <div class="sheet-actions wrap">
+    <button type="button" class="btn danger ghost" id="reset-all-btn">모든 카운트 0으로</button>
+  </div>
+  <h3>백업</h3>
+  <p class="hint">카운트는 이 기기의 브라우저에만 저장돼요. 기기를 바꿀 때 백업 파일을 사용하세요.</p>
+  <div class="sheet-actions wrap">
+    <button type="button" class="btn ghost" id="export-btn">백업 내보내기</button>
+    <label class="btn ghost">
+      백업 가져오기
+      <input type="file" id="import-input" accept="application/json,.json" hidden />
+    </label>
+  </div>
+  <div class="sheet-actions footer">
+    <span class="spacer"></span>
+    <button type="button" class="btn primary" id="settings-close-btn">닫기</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="js/store.js?v=1"></script>
+<script src="js/storage.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

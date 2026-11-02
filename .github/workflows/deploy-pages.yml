@@ -1,4 +1,4 @@
-name: Deploy web/, tracker/, vlog/ and reading/ to GitHub Pages
+name: Deploy web/, tracker/, vlog/, reading/ and counters/ to GitHub Pages
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
       - "tracker/**"
       - "vlog/**"
       - "reading/**"
+      - "counters/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
@@ -43,14 +44,19 @@ jobs:
         working-directory: reading
         run: node --test
 
-      # 사이트 루트 = web/ (사진 콜라주), /tracker/ = 데일리 트래커, /vlog/ = 5초 브이로그, /reading/ = 영어 읽기
+      - name: Test counters logic
+        working-directory: counters
+        run: node --test
+
+      # 사이트 루트 = web/ (사진 콜라주), /tracker/ = 데일리 트래커, /vlog/ = 5초 브이로그, /reading/ = 영어 읽기, /counters/ = 카운터
       - name: Assemble site
         run: |
-          mkdir -p _site/tracker _site/vlog _site/reading
+          mkdir -p _site/tracker _site/vlog _site/reading _site/counters
           cp -r web/. _site/
           cp -r tracker/index.html tracker/manifest.webmanifest tracker/sw.js tracker/css tracker/js tracker/icons _site/tracker/
           cp -r vlog/index.html vlog/css vlog/js vlog/icons _site/vlog/
           cp -r reading/index.html reading/css reading/js reading/icons reading/sample _site/reading/
+          cp -r counters/index.html counters/css counters/js counters/icons _site/counters/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

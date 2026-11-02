@@ -1,0 +1,9 @@
+{
+  "name": "counters-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "빌드 없이 브라우저에서 바로 여는 항목별 카운터 (스테퍼로 올리고 내리기)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
