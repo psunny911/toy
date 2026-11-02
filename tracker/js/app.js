@@ -6,14 +6,21 @@
   const S = Store;
   const St = Stats;
 
-  const VIEWS = ['day', 'week', 'month'];
+  const VIEWS = ['day', 'week', 'month', 'apps'];
+  // '앱' 탭의 다른 앱 링크 (배포 사이트 기준 상대 경로: /toy/tracker/ → /toy/...)
+  const OTHER_APPS = [
+    { name: '카운터', emoji: '🔢', desc: '항목별로 숫자를 세는 스테퍼 카운터', href: '../counters/', color: '#B5E5CF' },
+    { name: '소리 내어 읽기', emoji: '🗣️', desc: '영어 문장을 읽고 음성 인식으로 채점', href: '../reading/', color: '#CDB9F0' },
+    { name: '5초 브이로그', emoji: '🎬', desc: '하루 5초 영상을 모아 한 편으로', href: '../vlog/', color: '#F6C1CC' },
+    { name: '사진 콜라주', emoji: '🖼️', desc: '사진 1~4장으로 그리드 콜라주 만들기', href: '../', color: '#F8E3A1' },
+  ];
   const EMOJI_SUGGESTIONS = ['📚', '🔤', '🎧', '🗣️', '💊', '🍋', '🏃', '🏋️', '🧘', '🚶', '💧', '📖', '😴', '🥗', '☕', '🍜', '🍺', '✍️', '🎯', '📝'];
   const PRIMARY = '#A7C7E7';
 
   let data = TrackerStorage.loadData();
   const prefs = TrackerStorage.loadPrefs();
   let state = {
-    view: VIEWS.includes(prefs.view) ? prefs.view : 'day',
+    view: VIEWS.includes(prefs.view) && prefs.view !== 'apps' ? prefs.view : 'day',
     cursor: D.todayKey(),
     monthFilter: typeof prefs.monthFilter === 'string' ? prefs.monthFilter : 'all',
   };
@@ -23,6 +30,7 @@
   const prevBtn = document.getElementById('prev-btn');
   const nextBtn = document.getElementById('next-btn');
   const todayBtn = document.getElementById('today-btn');
+  const periodNav = document.querySelector('.period-nav');
   const tabs = Array.from(document.querySelectorAll('.tab'));
   const toastEl = document.getElementById('toast');
 
@@ -94,7 +102,10 @@
 
   function setState(patch) {
     state = { ...state, ...patch };
-    TrackerStorage.savePrefs({ view: state.view, monthFilter: state.monthFilter });
+    // '앱' 탭은 기억하지 않는다 — 다시 열면 마지막 기록 보기로 돌아온다
+    const savedView = state.view === 'apps' ? prefs.view || 'day' : state.view;
+    prefs.view = savedView;
+    TrackerStorage.savePrefs({ view: savedView, monthFilter: state.monthFilter });
     render();
   }
 
@@ -138,7 +149,7 @@
     touchStart = { x: t.clientX, y: t.clientY };
   }, { passive: true });
   viewEl.addEventListener('touchend', (e) => {
-    if (!touchStart) return;
+    if (!touchStart || state.view === 'apps') return;
     const t = e.changedTouches[0];
     const dx = t.clientX - touchStart.x;
     const dy = t.clientY - touchStart.y;
@@ -160,14 +171,31 @@
       tab.classList.toggle('active', active);
       tab.setAttribute('aria-selected', String(active));
     });
-    renderPeriodNav(today);
+    periodNav.hidden = state.view === 'apps';
+    if (state.view !== 'apps') renderPeriodNav(today);
 
     let content;
-    if (!data.trackers.length) content = renderEmpty();
+    if (state.view === 'apps') content = renderApps();
+    else if (!data.trackers.length) content = renderEmpty();
     else if (state.view === 'day') content = renderDay(today);
     else if (state.view === 'week') content = renderWeek(today);
     else content = renderMonth(today);
     viewEl.replaceChildren(content);
+  }
+
+  function renderApps() {
+    return h('section', { className: 'apps' },
+      h('h2', { className: 'apps-title', text: '다른 앱' }),
+      h('ul', { className: 'app-links' },
+        OTHER_APPS.map((a) =>
+          h('li', null,
+            h('a', { className: 'app-link card', attrs: { href: a.href }, vars: { '--c': a.color } },
+              h('span', { className: 'app-link-icon', text: a.emoji, attrs: { 'aria-hidden': 'true' } }),
+              h('span', { className: 'app-link-text' },
+                h('span', { className: 'app-link-name', text: a.name }),
+                h('span', { className: 'app-link-desc', text: a.desc })),
+              h('span', { className: 'app-link-arrow', text: '›', attrs: { 'aria-hidden': 'true' } })))
+        )));
   }
 
   function renderEmpty() {

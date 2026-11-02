@@ -1235,3 +1235,61 @@ button:disabled {
   color: var(--muted);
   opacity: 0.45;
 }
+
+/* ---------- apps tab (다른 앱 링크) ---------- */
+
+.apps-title {
+  margin: 4px 0 12px;
+  font-size: 1rem;
+}
+
+.app-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-link-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--c);
+  font-size: 1.35rem;
+}
+
+.app-link-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-link-name {
+  font-weight: 700;
+}
+
+.app-link-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.app-link-arrow {
+  flex: none;
+  font-size: 1.5rem;
+  color: var(--muted);
+}
