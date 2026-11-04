@@ -9,6 +9,7 @@
   const VIEWS = ['day', 'week', 'month', 'apps'];
   // '앱' 탭의 다른 앱 링크 (배포 사이트 기준 상대 경로: /toy/tracker/ → /toy/...)
   const OTHER_APPS = [
+    { name: '배색뜨개 미리보기', emoji: '🧶', desc: '격자에 배색 도안을 그리고 뜨개 원단으로 미리 보기', href: '../knit/', color: '#F3D98B' },
     { name: '카운터', emoji: '🔢', desc: '항목별로 숫자를 세는 스테퍼 카운터', href: '../counters/', color: '#B5E5CF' },
     { name: '소리 내어 읽기', emoji: '🗣️', desc: '영어 문장을 읽고 음성 인식으로 채점', href: '../reading/', color: '#CDB9F0' },
     { name: '5초 브이로그', emoji: '🎬', desc: '하루 5초 영상을 모아 한 편으로', href: '../vlog/', color: '#F6C1CC' },

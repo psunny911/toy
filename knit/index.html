@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none';"
+/>
+<meta name="theme-color" content="#F3D98B" />
+<meta name="description" content="격자에 배색 도안을 그리고 뜨개 원단으로 미리 보기" />
+<title>배색뜨개 미리보기</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/style.css?v=1" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 class="brand"><span class="brand-dot" aria-hidden="true"></span>배색뜨개 미리보기</h1>
+    <div class="topbar-actions">
+      <button type="button" class="icon-btn" id="undo-btn" aria-label="실행 취소" disabled>↶</button>
+      <button type="button" class="icon-btn" id="redo-btn" aria-label="다시 실행" disabled>↷</button>
+    </div>
+  </header>
+
+  <!-- 1. 격자 -->
+  <section class="card" aria-labelledby="grid-title">
+    <div class="card-head">
+      <h2 id="grid-title">도안</h2>
+      <span class="muted small" id="grid-size-label"></span>
+    </div>
+
+    <form class="size-row" id="size-form" novalidate>
+      <label class="field">
+        <span class="field-label">가로 (코)</span>
+        <input id="f-cols" type="number" inputmode="numeric" min="1" max="100" required />
+      </label>
+      <span class="times" aria-hidden="true">×</span>
+      <label class="field">
+        <span class="field-label">세로 (단)</span>
+        <input id="f-rows" type="number" inputmode="numeric" min="1" max="100" required />
+      </label>
+      <button type="submit" class="btn primary small">크기 적용</button>
+      <button type="button" class="btn ghost small" id="new-btn">새 격자</button>
+    </form>
+
+    <div class="tools" role="group" aria-label="도구">
+      <button type="button" class="tool" data-tool="pen" aria-pressed="true">✏️ 칠하기</button>
+      <button type="button" class="tool" data-tool="fill" aria-pressed="false">🪣 채우기</button>
+      <button type="button" class="tool" data-tool="erase" aria-pressed="false">🧽 지우기</button>
+      <button type="button" class="tool" data-tool="pan" aria-pressed="false">✋ 이동</button>
+    </div>
+
+    <div class="palette-row">
+      <div id="palette" class="palette" role="radiogroup" aria-label="실 색상"></div>
+      <div class="palette-actions">
+        <label class="btn ghost small" id="edit-color-label">
+          색 바꾸기
+          <input type="color" id="edit-color" class="visually-hidden-input" />
+        </label>
+        <button type="button" class="btn ghost small" id="add-color-btn">＋ 색 추가</button>
+        <button type="button" class="btn ghost small danger" id="remove-color-btn">색 삭제</button>
+      </div>
+    </div>
+
+    <div class="zoom-row">
+      <button type="button" class="btn ghost small" id="zoom-out-btn" aria-label="축소">－</button>
+      <span class="muted small" id="zoom-label">맞춤</span>
+      <button type="button" class="btn ghost small" id="zoom-in-btn" aria-label="확대">＋</button>
+      <span class="spacer"></span>
+      <label class="inline-field">
+        <span class="muted small">굵은 선</span>
+        <select id="f-major">
+          <option value="0">없음</option>
+          <option value="4">4칸</option>
+          <option value="5">5칸</option>
+          <option value="10">10칸</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid-scroll" id="grid-scroll">
+      <canvas id="grid-canvas" class="grid-canvas" aria-label="배색 도안 격자. 칸을 눌러 색을 칠하세요."></canvas>
+    </div>
+
+    <div class="card-actions">
+      <button type="button" class="btn ghost small" id="clear-btn">모두 지우기</button>
+      <button type="button" class="btn ghost small" id="sample-btn">예시 불러오기</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn primary" id="save-grid-btn">도안 이미지 저장</button>
+    </div>
+  </section>
+
+  <!-- 2. 미리보기 -->
+  <section class="card" aria-labelledby="preview-title">
+    <div class="card-head">
+      <h2 id="preview-title">뜨개 미리보기</h2>
+      <span class="muted small" id="preview-size-label"></span>
+    </div>
+
+    <div class="repeat-row">
+      <div class="stepper-field">
+        <span class="field-label">가로 반복</span>
+        <div class="stepper">
+          <button type="button" class="step-btn" data-repeat="repeatX" data-dir="-1" aria-label="가로 반복 줄이기">−</button>
+          <output id="repeat-x">1</output>
+          <button type="button" class="step-btn" data-repeat="repeatX" data-dir="1" aria-label="가로 반복 늘리기">＋</button>
+        </div>
+      </div>
+      <div class="stepper-field">
+        <span class="field-label">세로 반복</span>
+        <div class="stepper">
+          <button type="button" class="step-btn" data-repeat="repeatY" data-dir="-1" aria-label="세로 반복 줄이기">−</button>
+          <output id="repeat-y">1</output>
+          <button type="button" class="step-btn" data-repeat="repeatY" data-dir="1" aria-label="세로 반복 늘리기">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-frame">
+      <canvas id="knit-canvas" class="knit-canvas" aria-label="뜨개 원단 미리보기"></canvas>
+    </div>
+
+    <div class="card-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn primary" id="save-knit-btn">미리보기 이미지 저장</button>
+    </div>
+  </section>
+
+  <p class="footnote muted small">
+    도안과 미리보기는 이 기기의 브라우저에 자동으로 저장돼요. 이미지는 <code>knit_날짜시각.png</code> 이름으로 다운로드 폴더에 저장돼요.
+  </p>
+</div>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="js/pattern.js?v=1"></script>
+<script src="js/render.js?v=1"></script>
+<script src="js/storage.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

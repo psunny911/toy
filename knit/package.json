@@ -1,0 +1,9 @@
+{
+  "name": "knit-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "격자에 배색 도안을 그리고 뜨개 원단으로 미리 보는 정적 웹 앱",
+  "scripts": {
+    "test": "node --test"
+  }
+}
